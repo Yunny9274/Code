@@ -5,7 +5,9 @@
 - Local repository root: `code/`
 - Current branch: `main`
 - Initial commit: `a9ab1e0` (`Initialize GECo-CF research workspace`)
-- Remote: not configured yet
+- Remote: `origin` = `git@github.com:Yunny9274/Code.git`
+- Push status: local `main` is ready; remote existence/content still needs a
+  successful `git ls-remote` check before the first push
 - Git author currently configured as `王赟240108 <2957451296@xiaomi.com>`
 
 The repository tracks the `geco_cf/` experiment project and the
@@ -27,7 +29,7 @@ This is evidence for the Stage-1 community-localization hypothesis only. The
 adaptive fine-grained counterfactual search, predictor-seed robustness,
 additional datasets, and full baselines remain Stage 2 work.
 
-## After Connecting GitHub
+## After Verifying GitHub
 
 From this directory, configure the remote and push `main`:
 
