@@ -1,0 +1,34 @@
+# Python caches and local environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+
+# Experiment data and generated outputs
+geco_cf/geco_cf/data/
+geco_cf/geco_cf/checkpoints/
+geco_cf/geco_cf/results/
+geco_cf/geco_cf/*.egg-info/
+
+# LaTeX build products for the working manuscript
+Springer_Lecture_Notes_in_Computer_Science/samplepaper.aux
+Springer_Lecture_Notes_in_Computer_Science/samplepaper.bbl
+Springer_Lecture_Notes_in_Computer_Science/samplepaper.blg
+Springer_Lecture_Notes_in_Computer_Science/samplepaper.log
+Springer_Lecture_Notes_in_Computer_Science/samplepaper.out
+Springer_Lecture_Notes_in_Computer_Science/samplepaper.pdf
+Springer_Lecture_Notes_in_Computer_Science/My_essay.pdf
+Springer_Lecture_Notes_in_Computer_Science/llncsdoc.pdf
+
+# Local literature library; keep papers outside the source repository
+Springer_Lecture_Notes_in_Computer_Science/essay/
+
+# Other projects in this shared workspace; they retain their own repositories
+cf-gnnexplainer/
+geco_explainer/
+gnn-model-explainer-master/
+*.zip

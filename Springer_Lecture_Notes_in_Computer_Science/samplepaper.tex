@@ -1,0 +1,455 @@
+% GECo-CF working manuscript. Replace all TODO markers before submission.
+\documentclass[runningheads]{llncs}
+
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{amsmath,amssymb}
+\usepackage{url}
+
+\newcommand{\method}{GECo-CF}
+
+\begin{document}
+
+\title{GECo-CF: Community-Guided Coarse-to-Fine Counterfactual
+Explanations for Graph Neural Networks}
+\titlerunning{Community-Guided Counterfactual Explanations for GNNs}
+
+% TODO: Replace the anonymous author block after double-blind review.
+\author{Anonymous Authors}
+\authorrunning{Anonymous Authors}
+\institute{Anonymous Institution}
+
+\maketitle
+
+\begin{abstract}
+Counterfactual explanations describe small graph changes that alter a trained
+graph neural network's (GNN's) prediction. Existing methods commonly
+search over the full computation graph or optimize a dense edge mask, which
+can be inefficient and may fragment coherent graph structure. We propose
+\method, a post-hoc, model-agnostic framework that uses communities as a
+coarse structural prior for counterfactual search. Given a graph or a target
+node, \method first measures the prediction sensitivity to interventions on
+each detected community. It then expands the edge search space adaptively,
+prioritizing boundary edges of influential communities before admitting
+intra-community and global edges. A fine-grained, iteratively rescored search
+finds a prediction-flipping edge set, after which reverse pruning removes
+redundant edits. This design aims to retain the validity of global search while
+reducing model queries and limiting damage to community structure. We evaluate
+the community-localization stage on BA-2Motifs before evaluating the complete
+counterfactual search. Across three community-detection and control seeds, the
+top-ranked community contains a globally Top-5 sensitive edge in
+$78.6$--$81.6\%$ of correctly classified test graphs, compared with
+$52.1$--$53.2\%$ for a random community. Its mean intervention-induced margin
+drop is also $3.55$--$3.64$ larger than the random control, with paired
+bootstrap intervals excluding zero. These results support community
+intervention as a coarse localization signal; validity, minimality, and
+efficiency of the complete search remain to be established.
+
+\keywords{Graph neural networks \and Counterfactual explanations \and
+Explainable AI \and Community structure}
+\end{abstract}
+
+\section{Introduction}
+\label{sec:introduction}
+
+Graph neural networks (GNNs) have become a standard tool for learning from
+relational data, including molecules, social networks, and knowledge graphs
+\cite{kipf2017gcn,xu2019gin}. Their predictions, however, are produced through
+multi-hop message passing and are difficult to inspect directly. This lack of
+transparency is consequential in scientific and high-stakes applications,
+where a user needs not only an accurate prediction but also a concrete account
+of which relational evidence supports it. Post-hoc GNN explainers address this
+need by identifying influential subgraphs, features, or training examples
+\cite{ying2019gnnexplainer,luo2020pgexplainer,yuan2022survey}. Most early
+methods provide factual
+explanations: they describe graph components that support the prediction that
+was made.
+
+Counterfactual explanations answer a different and actionable question:
+\emph{what is the smallest plausible change to the input graph that would
+change the model's prediction?} For a fixed predictor, a counterfactual graph
+should flip the original label while remaining close to the observed graph.
+Methods such as CF-GNNExplainer formulate this objective as edge-mask
+optimization \cite{lucic2022cfgnn}, while subsequent approaches pursue robust
+decision regions or use latent generative models and discrete diffusion to
+improve plausibility and distributional alignment
+\cite{bajaj2021rcexplainer,ma2022clear,huang2023d4explainer}. Despite this
+progress, finding a high-quality structural counterfactual remains a difficult
+combinatorial problem. A computation graph with $|E|$ editable edges already
+induces $2^{|E|}$ deletion subsets, and unrestricted edit models are larger
+still. Dense relaxation reduces the immediate optimization burden but does not
+by itself identify where consequential edits should be sought.
+
+Graphs are not merely collections of interchangeable edges. Many exhibit
+mesoscopic organization in which nodes form densely connected communities
+linked by comparatively sparse boundary edges \cite{fortunato2010community}.
+Recent work has started to exploit communities or learned clusters for factual
+graph explanations \cite{amato2026geco,yang2026ciflow}, suggesting that this
+organization can provide a useful prior. Its role in counterfactual search,
+however, remains underexplored. Intervening on a community can cheaply test
+whether a coherent region is relevant to the current prediction; its boundary
+can then provide a compact set of candidate edits. Yet naively restricting
+edits to a single detected community is unsafe:
+community detection may be unstable, predictive evidence may span several
+communities, and the decisive edge may lie inside rather than between them.
+The central challenge is therefore to exploit community structure without
+sacrificing counterfactual validity.
+
+We introduce \method, a community-guided coarse-to-fine framework for
+structural counterfactual explanations. At the coarse stage, \method partitions
+the explanation graph and ranks communities by the decrease in the original
+class margin caused by a temporary community intervention. The score is
+normalized for intervention size to reduce the systematic preference for
+large communities. At the fine stage, the method first searches boundary edges
+associated with highly ranked communities, then adaptively admits their
+internal edges, additional communities, and finally the full graph when
+necessary. Candidate edges are rescored after each edit to account for their
+interactions. Once the prediction flips, reverse pruning restores every edge
+whose deletion is unnecessary. Thus, communities guide the order of search
+rather than impose a hard constraint on the returned explanation.
+
+Our study is organized around three questions. First, do high-scoring
+communities contain prediction-sensitive edges more often than random or
+size-based choices? Second, can community-guided expansion reduce model queries
+without materially lowering counterfactual validity? Third, does prioritizing
+community boundaries yield explanations that preserve more of the original
+mesoscopic structure? These questions separate the proposed mechanism from
+the performance of the complete system and make a negative result
+interpretable.
+
+The main contributions are:
+\begin{itemize}
+  \item We formulate size-normalized community intervention as a coarse signal
+  for locating counterfactually sensitive regions of a graph.
+  \item We develop an adaptive coarse-to-fine search that prioritizes community
+  boundaries but falls back to broader candidate sets to preserve validity.
+  \item We introduce an evaluation protocol that reports prediction flips and
+  edit size together with query cost and community-structure damage across
+  graph- and node-classification tasks.
+  \item We empirically test the community-guidance hypothesis against random,
+  largest-community, and global edge-sensitivity controls. On BA-2Motifs, the
+  top-ranked community covers a Top-5 sensitive edge in $78.6$--$81.6\%$ of
+  eligible graphs, versus $52.1$--$53.2\%$ for random selection.
+\end{itemize}
+
+\section{Related Work}
+\label{sec:related-work}
+
+\paragraph{Factual GNN explanations.}
+GNNExplainer learns an instance-specific mask over edges and features by
+maximizing mutual information with the original prediction
+\cite{ying2019gnnexplainer}. PGExplainer instead parameterizes mask generation
+so that explanation knowledge can be shared across instances
+\cite{luo2020pgexplainer}. Surveys and comparative studies organize the wider
+design space and show that explainer behavior depends on the task, predictor,
+and evaluation protocol \cite{yuan2022survey,longa2025explaining}. These methods
+primarily identify evidence supporting an existing prediction; they do not
+require the edited graph to produce a different prediction.
+
+\paragraph{Counterfactual graph explanations.}
+CF-GNNExplainer directly optimizes edge deletions for node-classification
+counterfactuals \cite{lucic2022cfgnn}. RCExplainer seeks robust explanations
+associated with shared decision regions \cite{bajaj2021rcexplainer}, whereas
+CLEAR uses a graph variational autoencoder and D4Explainer uses discrete
+denoising diffusion to improve plausibility or distributional alignment
+\cite{ma2022clear,huang2023d4explainer}. These approaches motivate our common
+requirements of validity and proximity. In contrast, our focus is the search
+process: communities prioritize discrete candidates, while adaptive expansion
+retains access to the complete editable edge set.
+
+\paragraph{Community-aware graph explanations.}
+GECo evaluates detected communities and combines the relevant ones into a
+factual explanation for graph classification \cite{amato2026geco}. CIFlow-GNN
+is an intrinsically interpretable architecture that controls information flow
+between learned clusters \cite{yang2026ciflow}. Community structure has also
+been incorporated into explanation objectives for fair heterogeneous link
+prediction \cite{wen2025fexpcom}. These studies establish that mesoscopic
+structure can organize graph explanations, but they do not address minimal
+prediction-flipping edits. \method differs by remaining post-hoc and
+model-agnostic, using community interventions only to order a counterfactual
+search, and falling back to broader candidates when the prior is insufficient.
+
+\section{Preliminaries and Problem Formulation}
+\label{sec:preliminaries}
+
+Let $G=(V,E,X)$ be an attributed graph and let $f_\theta$ be a trained,
+frozen GNN. For graph classification, the explanation target $\tau$ is $G$;
+for node classification, $\tau$ is a node $v$ and the explanation graph is its
+$L$-hop computation graph for an $L$-layer message-passing GNN. Let
+$y_0=\arg\max_c z_c(\tau;G)$ be the original predicted class, where $z_c$
+denotes the logit for class $c$. We define the original-class margin as
+\begin{equation}
+  m_\tau(G)=z_{y_0}(\tau;G)-\max_{c\ne y_0}z_c(\tau;G).
+\end{equation}
+Under the deletion-only setting used in our primary evaluation, the objective
+is to find a small set $E_{\mathrm{edit}}\subseteq E$ such that
+$\arg\max_c f_\theta(G\setminus E_{\mathrm{edit}})_c\ne y_0$. Unless stated
+otherwise, explanations are generated only for correctly classified test
+instances and all explainers receive the same instances and edit budget.
+
+\section{Method}
+\label{sec:method}
+
+\subsection{Community Intervention Score}
+Let $\mathcal{C}=\{C_1,\ldots,C_K\}$ be a partition returned by Louvain
+community detection \cite{blondel2008louvain}. For community $C_i$, let
+$A(C_i)=E(C_i)\cup\delta(C_i)$ contain its internal and boundary edges. We
+temporarily mask $A(C_i)$ and define
+\begin{equation}
+  \widetilde{s}_i=
+  \frac{m_\tau(G)-m_\tau(G\setminus A(C_i))}{|A(C_i)|^\alpha},
+  \qquad \alpha\geq 0.
+\end{equation}
+The intervention is used only to rank communities; it is not returned as the
+counterfactual. We use $\alpha=0.5$ as the provisional default and select its
+final value on validation data.
+
+\subsection{Adaptive Fine-Grained Search}
+Communities are ordered by $\widetilde{s}_i$. The candidate set initially
+contains boundary edges of the top-ranked community. If no valid
+counterfactual is found within the current stage, it is expanded to include
+that community's internal edges, edges associated with subsequent communities,
+and finally all editable edges. Within a stage, each candidate edge $e$ is
+scored by the margin reduction caused by deleting it from the current graph.
+The best edge is removed and the remaining edges are rescored until the label
+changes or the budget is exhausted. Reverse pruning then adds deleted edges
+back whenever doing so preserves the counterfactual label.
+
+\section{Experimental Setup}
+\label{sec:experiments}
+
+\subsection{Datasets}
+We begin with a deliberately small validation suite and expand only after the
+community-guidance hypothesis is supported. Table~\ref{tab:datasets} lists the
+planned datasets. All statistics will be computed from the exact processed
+splits used in our code rather than copied across incompatible dataset
+versions.
+
+\begin{table}[t]
+\centering
+\caption{Planned datasets and their role. ``Initial'' denotes the minimum
+experiment required before scaling the study. Exact processed statistics and
+split sizes will be inserted from the released preprocessing pipeline.}
+\label{tab:datasets}
+\small
+\begin{tabular}{llll}
+\toprule
+Task & Dataset & Source/type & Role \\
+\midrule
+Graph & BA-2Motifs & synthetic & Initial motif-grounded test \\
+Graph & MUTAG & molecular & Initial real-world test \\
+Graph & Benzene & molecular & Real-world extension \\
+Graph & Mutagenicity & molecular & Scale extension \\
+\midrule
+Node & Tree-Cycles & synthetic & Simple motif test \\
+Node & Tree-Grid & synthetic & Complex motif test \\
+Node & BA-Shapes & synthetic & Large local search space \\
+Node & BA-Community & synthetic & Explicit community structure \\
+Node & Cora/Citeseer & citation & Optional real-world extension \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Graph classification.}
+BA-2Motifs is the primary diagnostic dataset because its class-dependent
+motifs permit qualitative checks of whether highly ranked communities overlap
+predictive structure. MUTAG provides a small real molecular benchmark and
+enables early comparison with prior graph explainers. Benzene and
+Mutagenicity are reserved for the expanded evaluation after the method and
+preprocessing have been fixed. Synthetic ground truth is used only for
+diagnostic localization metrics; counterfactual quality is always evaluated
+against the frozen predictor rather than assumed causal ground truth.
+
+\paragraph{Node classification.}
+Tree-Cycles, Tree-Grid, BA-Shapes, and BA-Community follow the family of
+synthetic benchmarks used in prior GNN explanation work
+\cite{ying2019gnnexplainer,lucic2022cfgnn}. BA-Community is especially relevant
+for testing the proposed prior, whereas BA-Shapes stresses candidate-space
+reduction in larger computation graphs. For each target node, we explain the
+$L$-hop receptive field of the predictor. Communities are detected once on the
+full graph and mapped to each local computation graph to avoid inconsistent
+per-instance partitions. Cora and Citeseer are optional extensions; because
+they lack reliable counterfactual ground truth, they are evaluated using
+validity, minimality, efficiency, and structural preservation rather than
+motif overlap.
+
+\paragraph{Preprocessing and splits.}
+We will report the number of graphs or nodes, class balance, feature
+dimensionality, mean nodes and edges, split protocol, and the fraction of
+eligible test instances for every processed dataset. Before counterfactual
+evaluation, we will additionally report the mean number of communities,
+community-size distribution, modularity, boundary-edge ratio, and the fraction
+of explanation graphs containing only one community. Datasets with a dominant
+single-community regime cannot provide meaningful evidence for the proposed
+mechanism and will be identified as such rather than silently pooled.
+
+\subsection{Stage-1 Community-Localization Pilot}
+The first-stage pilot isolates the premise on which the subsequent
+coarse-to-fine search depends: whether an inexpensive community-level
+intervention localizes edges to which the frozen predictor is sensitive. We
+use the PyTorch Geometric version of BA-2Motifs, containing 1,000 graphs, 10
+node features, and two balanced classes. A stratified 80/10/10 split is fixed
+with predictor seed 0. The frozen predictor is a three-layer GCN with 20 hidden
+units per layer, raw adjacency aggregation (no normalization or added
+self-loops), and concatenated global max and sum readouts. It reaches 1.00
+validation accuracy and 0.98 test accuracy; consequently, 98 correctly
+classified test graphs (49 from each class) are eligible for explanation.
+
+For every eligible graph, Louvain communities are ranked by the intervention
+score with $\alpha=0.5$. We compare the top-ranked community with the largest
+community and with a uniformly selected random community. The random control
+is repeated 30 times per graph. We run pilot seeds 0, 1, and 2; these seeds
+change Louvain tie-breaking and the random control but reuse the same seed-0
+predictor and test split. They therefore measure robustness of the
+localization procedure, not variation across independently trained GNNs.
+
+As an evaluation oracle, we delete every edge individually and measure the
+resulting decrease in the original-class margin. This exhaustive scan is not
+part of the proposed search algorithm. It supplies the globally most
+sensitive edge, the five most sensitive edges, and an edge-level ranking
+against which community scores can be assessed. We report community
+intervention margin drop, prediction-flip rate under the whole-community
+intervention, coverage of the global Top-5 sensitive edges, and Spearman rank
+correlation between community scores and aggregated edge sensitivity. Paired
+differences over the same 98 graphs are accompanied by percentile bootstrap
+95\% confidence intervals with 5,000 resamples.
+
+\subsection{Evaluation Protocol}
+The primary metrics are validity (flip rate), number of edits, normalized edit
+distance, and validity as a function of edit budget. Efficiency is measured by
+end-to-end runtime, number of GNN forward passes, and number of candidate edges
+examined. To assess structural preservation, we report candidate-space
+reduction, the intra-community damage rate, the fraction of edits on boundary
+edges, change in modularity under the original fixed partition, the number of
+communities touched, and connectivity changes. Edit-size averages are reported
+with validity and are not restricted to easy successful instances without an
+explicit failure penalty.
+
+We compare against Random-CF and unrestricted Global-Greedy-CF as diagnostic
+controls, CF-GNNExplainer as an optimization-based baseline
+\cite{lucic2022cfgnn}, and RCExplainer, CLEAR, and D4Explainer where their
+task and edit settings permit a fair comparison
+\cite{bajaj2021rcexplainer,ma2022clear,huang2023d4explainer}.
+All methods use the same trained predictor, test instances, permitted edit
+operations, and maximum budget. Results are aggregated over multiple predictor
+seeds and reported with uncertainty; instance-level comparisons use paired
+bootstrap confidence intervals.
+
+\section{Results}
+\label{sec:results}
+
+\subsection{Stage-1 Community Localization on BA-2Motifs}
+The graph partitions are non-degenerate and stable across the three pilot
+seeds. The mean number of communities ranges from 4.92 to 4.97, mean
+modularity from 0.6062 to 0.6067, and the mean cross-community edge ratio from
+0.1523 to 0.1543. No eligible graph is assigned to a single community. Thus,
+the pilot meaningfully tests a community prior rather than a trivial
+single-block partition.
+
+Table~\ref{tab:pilot-summary} summarizes the localization outcomes. The
+intervention chosen by the proposed score produces a mean margin drop of
+approximately 4.89, compared with 1.18 for the largest community and 1.29 for
+the random control. It also contains at least one of the five globally most
+sensitive edges in 78.6--81.6\% of graphs. This is consistently higher than
+both largest-community selection (63.3--65.3\%) and random selection
+(52.1--53.2\%). The mean Spearman correlation between community score and
+edge-level sensitivity is positive in every run (0.447--0.467), providing
+additional evidence that the score is informative as a coarse ranking signal.
+
+\begin{table}[t]
+\centering
+\caption{Stage-1 results on the 98 correctly classified BA-2Motifs test
+graphs. Entries are means over pilot seeds 0, 1, and 2; the same predictor and
+test split are reused in all runs.}
+\label{tab:pilot-summary}
+\small
+\begin{tabular}{lrrr}
+\toprule
+Metric & Top-ranked & Largest & Random \\
+\midrule
+Margin drop & 4.885 & 1.184 & 1.290 \\
+Whole-community flip rate & 0.500 & 0.480 & 0.350 \\
+Global Top-5 edge coverage & 0.803 & 0.639 & 0.527 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The paired analysis in Table~\ref{tab:pilot-bootstrap} confirms that the
+margin-drop and Top-5-coverage advantages do not arise from comparing
+different graph sets. All corresponding 95\% confidence intervals exclude
+zero for every pilot seed. The top-ranked intervention also improves flip rate
+over the random control by 0.140--0.156, with intervals excluding zero. In
+contrast, its flip-rate advantage over the largest-community control is only
+0.020 and its interval includes zero. We therefore do not claim that the
+ranking improves whole-community flip probability over simply choosing the
+largest community. Margin reduction and sensitive-edge coverage, rather than
+whole-community deletion itself, provide the primary evidence for the
+localization hypothesis.
+
+\begin{table}[t]
+\centering
+\caption{Paired effects of top-ranked community selection. Values are mean
+differences with 95\% percentile bootstrap confidence intervals over the same
+98 graphs.}
+\label{tab:pilot-bootstrap}
+\small
+\begin{tabular}{llrr}
+\toprule
+Effect & Seed & Mean & 95\% CI \\
+\midrule
+\multirow{3}{*}{Margin drop vs. largest}
+ & 0 & 3.642 & [2.959, 4.317] \\
+ & 1 & 3.609 & [2.918, 4.274] \\
+ & 2 & 3.851 & [3.158, 4.520] \\
+\addlinespace
+\multirow{3}{*}{Margin drop vs. random}
+ & 0 & 3.594 & [3.271, 3.941] \\
+ & 1 & 3.550 & [3.208, 3.907] \\
+ & 2 & 3.641 & [3.322, 3.975] \\
+\addlinespace
+\multirow{3}{*}{Top-5 coverage vs. largest}
+ & 0 & 0.184 & [0.051, 0.316] \\
+ & 1 & 0.153 & [0.020, 0.286] \\
+ & 2 & 0.153 & [0.020, 0.296] \\
+\addlinespace
+\multirow{3}{*}{Top-5 coverage vs. random}
+ & 0 & 0.290 & [0.202, 0.377] \\
+ & 1 & 0.274 & [0.184, 0.360] \\
+ & 2 & 0.264 & [0.173, 0.352] \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Scope and limitations.}
+This pilot supports only the first research question: community intervention
+can localize prediction-sensitive regions on BA-2Motifs. It does not yet show
+that \method produces valid, sparse, or structurally preserving
+counterfactual explanations. Removing all edges associated with a community
+is a diagnostic perturbation rather than the returned explanation, and the
+single-edge scan is an exhaustive evaluation oracle rather than an efficient
+search. Moreover, the evidence currently covers one synthetic dataset and one
+trained predictor. The three pilot seeds assess community-detection and random
+control stability, not predictor-seed robustness. Evaluation of the adaptive
+fine search, multiple trained predictors, additional datasets, full
+counterfactual baselines, and the proposed validity, minimality, efficiency,
+and structural-preservation metrics is left to the next experimental stage.
+
+\section{Conclusion}
+\label{sec:conclusion}
+We presented \method, a community-guided coarse-to-fine framework for
+counterfactual GNN explanations, and evaluated its community-localization
+premise in a controlled first-stage pilot. On BA-2Motifs, intervention-ranked
+communities consistently yielded larger margin reductions and higher coverage
+of globally sensitive edges than random and largest-community controls. This
+supports using community interventions to order a subsequent edge-level
+search, but it is not evidence that the complete method already returns
+minimal counterfactuals. The next stage must evaluate the adaptive search
+itself across predictor seeds, datasets, and counterfactual baselines before
+claims about validity, efficiency, or structural preservation can be made.
+
+\bibliographystyle{splncs04}
+\bibliography{references}
+
+\end{document}
