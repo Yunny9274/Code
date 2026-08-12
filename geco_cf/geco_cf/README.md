@@ -44,8 +44,10 @@ src/geco_cf/predictors.py      framework-neutral and PyG prediction adapters
 src/geco_cf/pilot.py           per-graph pilot evaluation
 src/geco_cf/results.py         JSONL/CSV output
 scripts/run_pilot.py           experiment entry point
+scripts/train_mutagenicity.py  real-data predictor training entry point
 tests/                         deterministic unit tests
 configs/pilot_ba2motifs.json   first-stage defaults
+configs/pilot_mutagenicity_*   Mutagenicity Stage-1 configurations
 ```
 
 ## Installation
@@ -120,3 +122,26 @@ includes graph conversion, community detection, scoring, and aggregation.
 The predictor checkpoint, dataset split, eligible graph IDs, and seed must be
 identical for every method. Tune `alpha` on validation data only. Do not choose
 it after inspecting test results.
+
+## Real-data Stage-1 replication: Mutagenicity
+
+Mutagenicity is the first real-data replication of the community-localization
+hypothesis. It uses a separate three-layer GIN graph classifier and a frozen,
+stratified 80/10/10 split. It remains a Stage-1 experiment: the single-edge
+scan is an evaluation oracle, and no counterfactual optimizer is invoked.
+
+On the server, train the predictor first:
+
+```bash
+CUDA_VISIBLE_DEVICES=0 PYTHONPATH=. python scripts/train_mutagenicity.py \
+  --data-root data/Mutagenicity \
+  --output-dir checkpoints/mutagenicity_seed0 \
+  --seed 0 \
+  --device cuda:0
+```
+
+Then run the 10-graph smoke configuration, validate it, and analyze it before
+launching `pilot_mutagenicity_seed0.json`, `seed1.json`, and `seed2.json`.
+Use `examples.mutagenicity_adapter:build_experiment` as the factory. The
+checkpoint, split, and all pilot settings except the pilot seed must remain
+fixed across those three runs.

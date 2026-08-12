@@ -136,3 +136,62 @@ fixed. The pilot's go/no-go evidence is:
 
 Do not implement the full optimizer or tune test-set settings until these
 pilot summaries are available.
+
+## Step 6: real-data Stage-1 replication on Mutagenicity
+
+Mutagenicity is the next Stage-1 validation, not Stage-3 optimization. The
+first use of `TUDataset` downloads and processes the dataset automatically.
+Train a separate frozen GIN predictor with the fixed split and seed:
+
+```bash
+CUDA_VISIBLE_DEVICES=0 PYTHONPATH=. python scripts/train_mutagenicity.py \
+  --data-root data/Mutagenicity \
+  --output-dir checkpoints/mutagenicity_seed0 \
+  --seed 0 \
+  --device cuda:0
+cat checkpoints/mutagenicity_seed0/train_manifest.json
+sha256sum checkpoints/mutagenicity_seed0/model.pt
+```
+
+Before the pilot, inspect the processed dataset and manifest. Report the
+printed graph count, node-feature dimension, class count, class counts,
+validation accuracy, test accuracy, and checkpoint SHA256. Do not continue
+with a near-chance predictor: report the training log so its architecture or
+optimization can be corrected before the explanation evaluation.
+
+Run the fixed 10-eligible-graph smoke test:
+
+```bash
+CUDA_VISIBLE_DEVICES=0 PYTHONPATH=. python scripts/run_pilot.py \
+  --config configs/pilot_mutagenicity_smoke.json \
+  --factory examples.mutagenicity_adapter:build_experiment \
+  --output-dir results/pilot_mutagenicity_seed0_smoke
+python scripts/validate_pilot.py \
+  --input-dir results/pilot_mutagenicity_seed0_smoke
+python scripts/analyze_pilot.py \
+  --input-dir results/pilot_mutagenicity_seed0_smoke \
+  --output results/pilot_mutagenicity_seed0_smoke/analysis.json
+```
+
+If validation succeeds and no output has NaN values, launch the three full
+runs. They all reuse the same checkpoint and split; only the pilot seed and
+output directory differ:
+
+```bash
+for seed in 0 1 2; do
+  CUDA_VISIBLE_DEVICES=0 PYTHONPATH=. python scripts/run_pilot.py \
+    --config configs/pilot_mutagenicity_seed${seed}.json \
+    --factory examples.mutagenicity_adapter:build_experiment \
+    --output-dir results/pilot_mutagenicity_seed${seed}_full
+  python scripts/validate_pilot.py \
+    --input-dir results/pilot_mutagenicity_seed${seed}_full
+  python scripts/analyze_pilot.py \
+    --input-dir results/pilot_mutagenicity_seed${seed}_full \
+    --output results/pilot_mutagenicity_seed${seed}_full/analysis.json
+done
+```
+
+Send the train manifest, the smoke summary and validation result, plus the
+three full `summary.json` and `analysis.json` outputs. Interpret the outcome
+as a replication of the community-localization hypothesis only: it does not
+measure sparse counterfactual validity or the proposed adaptive search.

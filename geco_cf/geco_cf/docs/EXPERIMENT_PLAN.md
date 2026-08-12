@@ -101,6 +101,24 @@ are positive on the pre-registered primary metric. A negative or null result
 is useful: it means we revise the community definition before implementing a
 larger optimizer.
 
+### Stage 2b: real-data replication on Mutagenicity
+
+Before the full optimizer is added, repeat the same localization test on the
+real molecular graph-classification dataset Mutagenicity. This replication is
+not an opportunity to retune the test protocol: retain Louvain, `alpha=0.5`,
+30 random-control repeats, `top_k_edges=5`, the correctly-classified-instance
+rule, and the same paired bootstrap analysis. The only planned difference is a
+dataset-appropriate frozen predictor: `MutagenicityGIN`, a three-layer GIN
+with sum pooling, trained on a stratified 80/10/10 split at predictor seed 0.
+
+Run `configs/pilot_mutagenicity_smoke.json` first, then the three full
+configurations `pilot_mutagenicity_seed0.json`, `seed1.json`, and `seed2.json`.
+As for BA-2Motifs, the three pilot seeds change Louvain and random-control
+randomness, not the predictor weights or test split. Record processed dataset
+statistics, class counts, test accuracy, eligible graph count, split IDs,
+checkpoint SHA256, and runtime. Report the real-data result separately from
+BA-2Motifs; do not pool their graph-level metrics.
+
 ### Stage 3: full coarse-to-fine CF optimizer
 
 Only after Stage 2, implement the optimizer in a new module. It must expose
@@ -126,7 +144,7 @@ test data:
 - internal-only versus internal-plus-boundary `A(C)`;
 - greedy modularity versus Louvain (fixed seed);
 - community guidance disabled (edge-level or random initialization);
-- graph classification in this order: BA2Motifs, then MUTAG;
+- graph classification in this order: BA2Motifs, Mutagenicity, then MUTAG;
 - node classification afterwards: Tree-Cycles, Tree-Grid, and BA-Shapes
   (the local `syn4`, `syn5`, and `syn1` baselines), with labels and model
   interfaces adapted consistently.

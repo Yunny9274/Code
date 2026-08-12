@@ -1,0 +1,17 @@
+{
+  "experiment": "community_intervention_pilot",
+  "dataset": "Mutagenicity",
+  "data_root": "data/Mutagenicity",
+  "checkpoint": "checkpoints/mutagenicity_seed0/model.pt",
+  "split": "checkpoints/mutagenicity_seed0/split.json",
+  "device": "cuda:0",
+  "seed": 1,
+  "community_method": "louvain",
+  "alpha": 0.5,
+  "random_repeats": 30,
+  "score_individual_edges": true,
+  "top_k_edges": 5,
+  "correct_only": true,
+  "min_original_margin": 0.0,
+  "max_graphs": null
+}
