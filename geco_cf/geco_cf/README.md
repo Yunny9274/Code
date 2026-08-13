@@ -17,6 +17,10 @@ run before launching a full server job.
 For the server's first action, use the read-only preflight in
 [docs/SERVER_GUIDE.md](docs/SERVER_GUIDE.md).
 
+Stage 2 starts with the Global-Greedy-CF reference and its 10-graph BA2Motifs
+smoke test. Follow [docs/STAGE2_GUIDE.md](docs/STAGE2_GUIDE.md); do not launch
+the full search before its output accounting has been reviewed.
+
 ## Pilot definition
 
 For a correctly classified graph with original class `y0`, define the logit
