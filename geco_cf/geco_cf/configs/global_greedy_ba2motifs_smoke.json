@@ -11,5 +11,6 @@
   "reverse_prune": true,
   "correct_only": true,
   "min_original_margin": 0.0,
-  "max_graphs": 10
+  "max_graphs": 10,
+  "max_graphs_per_class": 5
 }

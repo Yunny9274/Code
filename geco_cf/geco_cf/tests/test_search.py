@@ -4,7 +4,7 @@ import networkx as nx
 import numpy as np
 
 from geco_cf.community import canonical_edges
-from geco_cf.search import SearchConfig, evaluate_global_greedy, summarize_search
+from geco_cf.search import SearchConfig, evaluate_global_greedy, run_search, summarize_search
 from geco_cf.search_results import write_search_results
 from scripts.validate_search import validate
 
@@ -50,3 +50,29 @@ def test_global_greedy_records_budget_failure():
     assert result["success"] is False
     assert result["edit_count"] == 1
     assert result["prune_calls"] == 0
+
+
+def test_run_search_can_cap_each_class_for_balanced_smoke():
+    graphs = []
+    for graph_id, label in enumerate([0, 0, 0, 1, 1, 1]):
+        graph = ToyGraph()
+        graph.y = label
+        graph.graph_id = graph_id
+        graph.add_edges_from([(0, 1), (1, 2), (2, 3)])
+        graphs.append(graph)
+
+    def always_correct(graph, removed_edges=()):
+        return np.array([2.0, 0.0]) if graph.y == 0 else np.array([0.0, 2.0])
+
+    results = run_search(
+        graphs,
+        always_correct,
+        SearchConfig(max_edits=1),
+        max_graphs=4,
+        max_graphs_per_class=2,
+    )
+    assert [result["graph_id"] for result in results] == [0, 1, 3, 4]
+    assert summarize_search(results, SearchConfig(max_edits=1))["label_counts"] == {
+        "0": 2,
+        "1": 2,
+    }

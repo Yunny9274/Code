@@ -63,11 +63,16 @@ following checks pass:
 
 - the validator returns `"valid": true`;
 - `num_graphs` is 10;
+- `label_counts` is exactly `{"0": 5, "1": 5}`;
 - `0 <= validity <= 1` and `num_successes <= num_graphs`;
 - successful graphs have `edit_count <= 5`;
 - `forward_calls = 1 + candidate_evaluations + prune_calls` for every graph;
 - failed graphs remain in `graphs.jsonl` rather than being discarded;
 - there are no NaN values or tracebacks.
+
+The per-class cap is important because the fixed BA2Motifs test IDs are sorted
+and the first eligible graphs can all belong to one class. It affects only
+smoke-test selection; full evaluations retain every eligible test graph.
 
 ## Later checkpoints
 

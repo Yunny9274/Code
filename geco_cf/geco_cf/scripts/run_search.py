@@ -35,7 +35,13 @@ def main() -> None:
         **{key: raw_config[key] for key in SearchConfig.__dataclass_fields__ if key in raw_config}
     )
     dataset, predictor = load_factory(args.factory)(raw_config)
-    results = run_search(dataset, predictor, search_config, raw_config.get("max_graphs"))
+    results = run_search(
+        dataset,
+        predictor,
+        search_config,
+        raw_config.get("max_graphs"),
+        raw_config.get("max_graphs_per_class"),
+    )
     summary = summarize_search(results, search_config)
     write_search_results(args.output_dir, results, summary)
     print(json.dumps(summary, ensure_ascii=False, indent=2))

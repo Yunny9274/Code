@@ -175,15 +175,31 @@ def run_search(
     predictor: GraphPredictor,
     config: SearchConfig,
     max_graphs: int | None = None,
+    max_graphs_per_class: int | None = None,
 ) -> list[dict[str, Any]]:
+    if max_graphs is not None and max_graphs < 1:
+        raise ValueError("max_graphs must be positive when provided")
+    if max_graphs_per_class is not None and max_graphs_per_class < 1:
+        raise ValueError("max_graphs_per_class must be positive when provided")
     results: list[dict[str, Any]] = []
+    class_counts: dict[int, int] = {}
     for position, graph in enumerate(dataset):
+        label = _label(graph)
+        if (
+            max_graphs_per_class is not None
+            and label is not None
+            and class_counts.get(label, 0) >= max_graphs_per_class
+        ):
+            continue
         graph_id = getattr(graph, "graph_id", position)
         if hasattr(graph_id, "item"):
             graph_id = graph_id.item()
         result = evaluate_global_greedy(graph, predictor, config, graph_id)
         if result is not None:
             results.append(result)
+            result_label = result["label"]
+            if result_label is not None:
+                class_counts[result_label] = class_counts.get(result_label, 0) + 1
             if max_graphs is not None and len(results) >= max_graphs:
                 break
     return results
@@ -194,8 +210,12 @@ def summarize_search(results: list[dict[str, Any]], config: SearchConfig) -> dic
     if not results:
         return summary
     successes = [result for result in results if result["success"]]
+    labels = sorted({result["label"] for result in results if result["label"] is not None})
     summary.update(
         {
+            "label_counts": {
+                str(label): sum(result["label"] == label for result in results) for label in labels
+            },
             "num_successes": len(successes),
             "validity": len(successes) / len(results),
             "mean_edit_count_success": (
