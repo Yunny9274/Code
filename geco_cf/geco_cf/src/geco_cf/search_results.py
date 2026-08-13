@@ -32,6 +32,9 @@ def write_search_results(
         "margin_drop",
         "prediction_after",
         "flipped",
+        "stage",
+        "stage_start",
+        "stages_examined",
     ]
     with (output / "steps.csv").open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fields)

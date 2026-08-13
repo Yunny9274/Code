@@ -41,6 +41,7 @@ def validate(output_dir: str | Path) -> dict[str, Any]:
             "edit_count",
             "removed_edges",
             "search_steps",
+            "community_scoring_calls",
             "candidate_evaluations",
             "prune_calls",
             "forward_calls",
@@ -50,7 +51,12 @@ def validate(output_dir: str | Path) -> dict[str, Any]:
             raise ValueError(f"graph {row.get('graph_id')} is missing {missing_fields}")
         if row["edit_count"] != len(row["removed_edges"]):
             raise ValueError(f"graph {row.get('graph_id')} has inconsistent edit_count")
-        expected_calls = 1 + int(row["candidate_evaluations"]) + int(row["prune_calls"])
+        expected_calls = (
+            1
+            + int(row["community_scoring_calls"])
+            + int(row["candidate_evaluations"])
+            + int(row["prune_calls"])
+        )
         if row["forward_calls"] != expected_calls:
             raise ValueError(
                 f"graph {row.get('graph_id')} reports {row['forward_calls']} calls; "

@@ -109,3 +109,59 @@ deletion budget cannot repair the observed directionality along this search;
 the full paper must report per-class validity and later consider edge addition
 as a separate edit setting. This diagnostic is not a full validation-set
 benchmark and must not be pooled with test results.
+
+The diagnostic produced identical success sets at budgets 5 and 30: class 0
+remained at 1/5 and class 1 at 5/5, while the larger budget more than doubled
+the mean query count. We therefore freeze `max_edits=5` for the first matched
+deletion-only comparison.
+
+## Step 3: matched GECo-CF smoke test
+
+The first GECo-CF prototype ranks communities using the Stage-1 intervention
+score, then searches cumulative candidate stages in this order: top-community
+boundary, top-community internal edges, subsequent ranked communities, and a
+full-graph fallback. A stage expands when its best candidate does not reduce
+the current original-class margin. Candidate edges are rescored after every
+committed edit, and successful explanations are reverse-pruned.
+
+Community-intervention forward passes are included in the total query count.
+Run GECo-CF on exactly the same balanced ten test graphs and five-edge budget
+as the Global-Greedy smoke:
+
+```bash
+CUDA_VISIBLE_DEVICES=0 PYTHONPATH=src:. python scripts/run_search.py \
+  --config configs/geco_cf_ba2motifs_smoke.json \
+  --factory examples.ba2motifs_adapter:build_experiment \
+  --output-dir results/geco_cf_ba2motifs_seed0_balanced_smoke
+python scripts/validate_search.py \
+  --input-dir results/geco_cf_ba2motifs_seed0_balanced_smoke
+cat results/geco_cf_ba2motifs_seed0_balanced_smoke/summary.json
+```
+
+Inspect one graph per class, including its community ranking and stage trace:
+
+```bash
+python - <<'PY'
+import json
+
+path = "results/geco_cf_ba2motifs_seed0_balanced_smoke/graphs.jsonl"
+rows = [json.loads(line) for line in open(path, encoding="utf-8")]
+for label in (0, 1):
+    row = next(row for row in rows if row["label"] == label)
+    print(json.dumps(row, indent=2))
+PY
+```
+
+The validator must return `valid=true`, including the accounting identity
+`forward_calls = 1 + community_scoring_calls + candidate_evaluations +
+prune_calls`. Compare this smoke with Global-Greedy only for debugging:
+
+- the same graph IDs and `label_counts={"0": 5, "1": 5}` must be used;
+- GECo-CF should make fewer candidate evaluations on at least some graphs;
+- every selected edge must identify the candidate stage that supplied it;
+- `global_fallback` is allowed and is necessary for preserving validity;
+- failures and class-direction asymmetry must remain visible.
+
+Do not run the full test split yet. First report the summary, validator output,
+and the two representative graph rows so that candidate expansion, query
+accounting, and matched-instance selection can be reviewed.

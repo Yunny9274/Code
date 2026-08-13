@@ -10,7 +10,13 @@ from typing import Any
 import networkx as nx
 import numpy as np
 
-from .community import Edge, canonical_edges, to_networkx_undirected
+from .community import (
+    Edge,
+    canonical_edges,
+    detect_communities,
+    partition_edges,
+    to_networkx_undirected,
+)
 from .predictors import GraphPredictor, class_margin
 
 
@@ -22,12 +28,16 @@ class SearchConfig:
     correct_only: bool = True
     min_original_margin: float = 0.0
     seed: int = 0
+    community_method: str = "louvain"
+    alpha: float = 0.5
 
     def __post_init__(self) -> None:
-        if self.method != "global_greedy":
+        if self.method not in {"global_greedy", "geco_cf"}:
             raise ValueError(f"unsupported search method: {self.method}")
         if self.max_edits < 1:
             raise ValueError("max_edits must be positive")
+        if self.alpha < 0:
+            raise ValueError("alpha must be non-negative")
 
 
 def _label(graph: Any) -> int | None:
@@ -53,6 +63,59 @@ def _component_stats(graph: nx.Graph, removed: set[Edge]) -> tuple[int, float]:
     return len(components), float(largest_ratio)
 
 
+def _base_result(
+    *,
+    graph_id: int | str,
+    label: int | None,
+    config: SearchConfig,
+    nx_graph: nx.Graph,
+    original_prediction: int,
+    final_prediction: int,
+    original_margin: float,
+    final_margin: float,
+    removed: set[Edge],
+    steps: list[dict[str, Any]],
+    pre_prune_edit_count: int,
+    pruned_edges: list[list[int]],
+    community_scoring_calls: int,
+    candidate_evaluations: int,
+    prune_calls: int,
+    forward_calls: int,
+    started_at: float,
+) -> dict[str, Any]:
+    original_components, original_largest_ratio = _component_stats(nx_graph, set())
+    final_components, final_largest_ratio = _component_stats(nx_graph, removed)
+    return {
+        "graph_id": graph_id,
+        "label": label,
+        "method": config.method,
+        "original_prediction": original_prediction,
+        "final_prediction": final_prediction,
+        "original_margin": original_margin,
+        "final_margin": final_margin,
+        "success": final_prediction != original_prediction,
+        "num_nodes": nx_graph.number_of_nodes(),
+        "num_edges": nx_graph.number_of_edges(),
+        "max_edits": config.max_edits,
+        "pre_prune_edit_count": pre_prune_edit_count,
+        "edit_count": len(removed),
+        "normalized_edit_distance": len(removed) / max(nx_graph.number_of_edges(), 1),
+        "removed_edges": [list(edge) for edge in sorted(removed)],
+        "pruned_edges": pruned_edges,
+        "search_steps": steps,
+        "community_scoring_calls": community_scoring_calls,
+        "candidate_evaluations": candidate_evaluations,
+        "prune_calls": prune_calls,
+        "forward_calls": forward_calls,
+        "original_num_components": original_components,
+        "final_num_components": final_components,
+        "component_increase": final_components - original_components,
+        "original_largest_component_ratio": original_largest_ratio,
+        "final_largest_component_ratio": final_largest_ratio,
+        "runtime_seconds": perf_counter() - started_at,
+    }
+
+
 def evaluate_global_greedy(
     graph: Any,
     predictor: GraphPredictor,
@@ -76,7 +139,6 @@ def evaluate_global_greedy(
     removed: set[Edge] = set()
     steps: list[dict[str, Any]] = []
     current_logits = original_logits
-    success = False
     candidate_evaluations = 0
     edit_budget = min(config.max_edits, len(all_edges))
 
@@ -118,13 +180,12 @@ def evaluate_global_greedy(
             }
         )
         if current_prediction != original_prediction:
-            success = True
             break
 
     pre_prune_edit_count = len(removed)
     prune_calls = 0
     pruned_edges: list[list[int]] = []
-    if success and config.reverse_prune:
+    if int(current_logits.argmax()) != original_prediction and config.reverse_prune:
         for edge in reversed([tuple(step["selected_edge"]) for step in steps]):
             trial_removed = removed - {edge}
             trial_logits = np.asarray(predictor(graph, trial_removed), dtype=float).reshape(-1)
@@ -137,37 +198,201 @@ def evaluate_global_greedy(
 
     final_prediction = int(current_logits.argmax())
     final_margin = class_margin(current_logits, original_prediction)
-    success = final_prediction != original_prediction
-    original_components, original_largest_ratio = _component_stats(nx_graph, set())
-    final_components, final_largest_ratio = _component_stats(nx_graph, removed)
-    return {
-        "graph_id": graph_id,
-        "label": label,
-        "method": config.method,
-        "original_prediction": original_prediction,
-        "final_prediction": final_prediction,
-        "original_margin": original_margin,
-        "final_margin": final_margin,
-        "success": success,
-        "num_nodes": nx_graph.number_of_nodes(),
-        "num_edges": len(all_edges),
-        "max_edits": config.max_edits,
-        "pre_prune_edit_count": pre_prune_edit_count,
-        "edit_count": len(removed),
-        "normalized_edit_distance": len(removed) / max(len(all_edges), 1),
-        "removed_edges": [list(edge) for edge in sorted(removed)],
-        "pruned_edges": pruned_edges,
-        "search_steps": steps,
-        "candidate_evaluations": candidate_evaluations,
-        "prune_calls": prune_calls,
-        "forward_calls": forward_calls,
-        "original_num_components": original_components,
-        "final_num_components": final_components,
-        "component_increase": final_components - original_components,
-        "original_largest_component_ratio": original_largest_ratio,
-        "final_largest_component_ratio": final_largest_ratio,
-        "runtime_seconds": perf_counter() - started_at,
+    return _base_result(
+        graph_id=graph_id,
+        label=label,
+        config=config,
+        nx_graph=nx_graph,
+        original_prediction=original_prediction,
+        final_prediction=final_prediction,
+        original_margin=original_margin,
+        final_margin=final_margin,
+        removed=removed,
+        steps=steps,
+        pre_prune_edit_count=pre_prune_edit_count,
+        pruned_edges=pruned_edges,
+        community_scoring_calls=0,
+        candidate_evaluations=candidate_evaluations,
+        prune_calls=prune_calls,
+        forward_calls=forward_calls,
+        started_at=started_at,
+    )
+
+
+def evaluate_geco_cf(
+    graph: Any,
+    predictor: GraphPredictor,
+    config: SearchConfig,
+    graph_id: int | str,
+) -> dict[str, Any] | None:
+    """Run community-guided adaptive edge deletion with a full-graph fallback."""
+    started_at = perf_counter()
+    nx_graph = to_networkx_undirected(graph)
+    all_edges = sorted(canonical_edges(nx_graph.edges))
+    original_logits = np.asarray(predictor(graph, ()), dtype=float).reshape(-1)
+    forward_calls = 1
+    original_prediction = int(original_logits.argmax())
+    label = _label(graph)
+    original_margin = class_margin(original_logits, original_prediction)
+    if config.correct_only and label is not None and original_prediction != label:
+        return None
+    if original_margin < config.min_original_margin:
+        return None
+
+    communities = detect_communities(nx_graph, config.community_method, config.seed)
+    community_rows: list[dict[str, Any]] = []
+    community_edges: list[tuple[frozenset[Edge], frozenset[Edge]]] = []
+    for community_id, nodes in enumerate(communities):
+        groups = partition_edges(nx_graph, nodes)
+        affected = groups.affected
+        logits = np.asarray(predictor(graph, affected), dtype=float).reshape(-1)
+        forward_calls += 1
+        margin = class_margin(logits, original_prediction)
+        margin_drop = original_margin - margin
+        community_rows.append(
+            {
+                "community_id": community_id,
+                "nodes": sorted(nodes),
+                "num_nodes": len(nodes),
+                "num_internal_edges": len(groups.internal),
+                "num_boundary_edges": len(groups.boundary),
+                "num_affected_edges": len(affected),
+                "margin_drop": margin_drop,
+                "normalized_score": margin_drop / max(len(affected), 1) ** config.alpha,
+            }
+        )
+        community_edges.append((groups.internal, groups.boundary))
+
+    ranked_ids = sorted(
+        range(len(community_rows)),
+        key=lambda index: (-community_rows[index]["normalized_score"], index),
+    )
+    stages: list[tuple[str, set[Edge]]] = []
+    cumulative: set[Edge] = set()
+    if ranked_ids:
+        top_id = ranked_ids[0]
+        cumulative.update(community_edges[top_id][1])
+        stages.append(("top_boundary", set(cumulative)))
+        cumulative.update(community_edges[top_id][0])
+        stages.append(("top_community", set(cumulative)))
+        for rank, community_id in enumerate(ranked_ids[1:], start=2):
+            internal, boundary = community_edges[community_id]
+            cumulative.update(internal | boundary)
+            stages.append((f"top_{rank}_communities", set(cumulative)))
+    if not stages or cumulative != set(all_edges):
+        stages.append(("global_fallback", set(all_edges)))
+
+    removed: set[Edge] = set()
+    steps: list[dict[str, Any]] = []
+    current_logits = original_logits
+    current_stage = 0
+    candidate_evaluations = 0
+    edit_budget = min(config.max_edits, len(all_edges))
+
+    for step_index in range(1, edit_budget + 1):
+        margin_before = class_margin(current_logits, original_prediction)
+        evaluated: dict[Edge, tuple[np.ndarray, float]] = {}
+        selected_edge: Edge | None = None
+        selected_logits: np.ndarray | None = None
+        selected_margin = float("inf")
+        stage_start = current_stage
+
+        while current_stage < len(stages):
+            stage_name, stage_edges = stages[current_stage]
+            for edge in sorted(stage_edges - removed - set(evaluated)):
+                trial_logits = np.asarray(predictor(graph, removed | {edge}), dtype=float).reshape(-1)
+                forward_calls += 1
+                candidate_evaluations += 1
+                evaluated[edge] = (trial_logits, class_margin(trial_logits, original_prediction))
+
+            available = {
+                edge: values for edge, values in evaluated.items() if edge in stage_edges and edge not in removed
+            }
+            if available:
+                best_edge = min(available, key=lambda edge: (available[edge][1], edge))
+                best_logits, best_margin = available[best_edge]
+                is_global_stage = current_stage == len(stages) - 1
+                if best_margin < margin_before or is_global_stage:
+                    selected_edge = best_edge
+                    selected_logits = best_logits
+                    selected_margin = best_margin
+                    break
+            current_stage += 1
+
+        if selected_edge is None or selected_logits is None:
+            break
+        removed.add(selected_edge)
+        current_logits = selected_logits
+        current_prediction = int(current_logits.argmax())
+        steps.append(
+            {
+                "step": step_index,
+                "selected_edge": list(selected_edge),
+                "candidate_count": len(evaluated),
+                "margin_before": margin_before,
+                "margin_after": selected_margin,
+                "margin_drop": margin_before - selected_margin,
+                "prediction_after": current_prediction,
+                "flipped": current_prediction != original_prediction,
+                "stage": stages[current_stage][0],
+                "stage_start": stages[stage_start][0],
+                "stages_examined": current_stage - stage_start + 1,
+            }
+        )
+        if current_prediction != original_prediction:
+            break
+
+    pre_prune_edit_count = len(removed)
+    prune_calls = 0
+    pruned_edges: list[list[int]] = []
+    if int(current_logits.argmax()) != original_prediction and config.reverse_prune:
+        for edge in reversed([tuple(step["selected_edge"]) for step in steps]):
+            trial_removed = removed - {edge}
+            trial_logits = np.asarray(predictor(graph, trial_removed), dtype=float).reshape(-1)
+            forward_calls += 1
+            prune_calls += 1
+            if int(trial_logits.argmax()) != original_prediction:
+                removed = trial_removed
+                current_logits = trial_logits
+                pruned_edges.append(list(edge))
+
+    result = _base_result(
+        graph_id=graph_id,
+        label=label,
+        config=config,
+        nx_graph=nx_graph,
+        original_prediction=original_prediction,
+        final_prediction=int(current_logits.argmax()),
+        original_margin=original_margin,
+        final_margin=class_margin(current_logits, original_prediction),
+        removed=removed,
+        steps=steps,
+        pre_prune_edit_count=pre_prune_edit_count,
+        pruned_edges=pruned_edges,
+        community_scoring_calls=len(communities),
+        candidate_evaluations=candidate_evaluations,
+        prune_calls=prune_calls,
+        forward_calls=forward_calls,
+        started_at=started_at,
+    )
+    result["num_communities"] = len(communities)
+    result["community_ranking"] = [community_rows[index] for index in ranked_ids]
+    result["num_search_stages"] = len(stages)
+    result["search_stage_names"] = [name for name, _ in stages]
+
+    node_to_community = {
+        node: community_id for community_id, community in enumerate(communities) for node in community
     }
+    internal_edits = sum(
+        node_to_community.get(edge[0]) == node_to_community.get(edge[1]) for edge in removed
+    )
+    touched = {
+        node_to_community[node] for edge in removed for node in edge if node in node_to_community
+    }
+    result["num_internal_edits"] = internal_edits
+    result["num_boundary_edits"] = len(removed) - internal_edits
+    result["num_communities_touched"] = len(touched)
+    return result
 
 
 def run_search(
@@ -194,7 +419,8 @@ def run_search(
         graph_id = getattr(graph, "graph_id", position)
         if hasattr(graph_id, "item"):
             graph_id = graph_id.item()
-        result = evaluate_global_greedy(graph, predictor, config, graph_id)
+        evaluator = evaluate_geco_cf if config.method == "geco_cf" else evaluate_global_greedy
+        result = evaluator(graph, predictor, config, graph_id)
         if result is not None:
             results.append(result)
             result_label = result["label"]
