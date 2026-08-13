@@ -475,6 +475,9 @@ def summarize_search(results: list[dict[str, Any]], config: SearchConfig) -> dic
             "mean_candidate_evaluations": float(
                 np.mean([result["candidate_evaluations"] for result in results])
             ),
+            "mean_community_scoring_calls": float(
+                np.mean([result.get("community_scoring_calls", 0) for result in results])
+            ),
             "mean_runtime_seconds": float(np.mean([result["runtime_seconds"] for result in results])),
             "mean_component_increase_success": (
                 float(np.mean([result["component_increase"] for result in successes]))
@@ -492,6 +495,17 @@ def summarize_search(results: list[dict[str, Any]], config: SearchConfig) -> dic
                     )
                 )
                 if successes
+                else None
+            ),
+            "boundary_edit_rate_success": (
+                sum(result.get("num_boundary_edits", 0) for result in successes)
+                / max(sum(result["edit_count"] for result in successes), 1)
+                if successes and all("num_boundary_edits" in result for result in successes)
+                else None
+            ),
+            "mean_communities_touched_success": (
+                float(np.mean([result["num_communities_touched"] for result in successes]))
+                if successes and all("num_communities_touched" in result for result in successes)
                 else None
             ),
         }

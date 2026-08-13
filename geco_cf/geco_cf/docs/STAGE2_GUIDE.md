@@ -165,3 +165,19 @@ prune_calls`. Compare this smoke with Global-Greedy only for debugging:
 Do not run the full test split yet. First report the summary, validator output,
 and the two representative graph rows so that candidate expansion, query
 accounting, and matched-instance selection can be reviewed.
+
+After both smoke outputs validate, run the strict matched-instance comparison:
+
+```bash
+PYTHONPATH=src:. python scripts/compare_searches.py \
+  --baseline-dir results/global_greedy_ba2motifs_seed0_balanced_smoke \
+  --candidate-dir results/geco_cf_ba2motifs_seed0_balanced_smoke \
+  --output results/ba2motifs_seed0_balanced_smoke_comparison.json
+```
+
+The script refuses to compare outputs unless their graph IDs, labels, original
+predictions, edge counts, and edit budgets match. It reports overall and
+per-class validity differences, candidate and total-query reduction, and edit
+and connectivity differences restricted to instances where both searches
+succeed. This command is the required comparison path for later full runs;
+do not compare independent summary means by hand.
