@@ -181,3 +181,40 @@ per-class validity differences, candidate and total-query reduction, and edit
 and connectivity differences restricted to instances where both searches
 succeed. This command is the required comparison path for later full runs;
 do not compare independent summary means by hand.
+
+## Step 4: full validation-split comparison
+
+The matched smoke preserved validity and edit count while reducing total
+forward calls, but its five jointly successful graphs showed more connectivity
+damage under GECo-CF. Treat that observation as a diagnostic, not a test-set
+result. Before changing the edge policy, run both frozen searches over every
+eligible graph in the validation split with the same five-edge budget:
+
+```bash
+for method in global_greedy geco_cf; do
+  CUDA_VISIBLE_DEVICES=0 PYTHONPATH=src:. python scripts/run_search.py \
+    --config configs/${method}_ba2motifs_val_full.json \
+    --factory examples.ba2motifs_adapter:build_experiment \
+    --output-dir results/${method}_ba2motifs_val_full
+  python scripts/validate_search.py \
+    --input-dir results/${method}_ba2motifs_val_full
+done
+
+PYTHONPATH=src:. python scripts/compare_searches.py \
+  --baseline-dir results/global_greedy_ba2motifs_val_full \
+  --candidate-dir results/geco_cf_ba2motifs_val_full \
+  --output results/ba2motifs_val_full_comparison.json
+```
+
+Report both summaries, both validator outputs, and the comparison JSON. The
+decision rule is:
+
+- preserve GECo-CF validity within 0.05 of Global-Greedy;
+- do not increase the mean edit count on jointly successful graphs;
+- require a positive total-query reduction after community-scoring calls;
+- inspect per-class effects rather than relying only on the aggregate;
+- if connectivity damage remains materially worse, develop and compare a
+  bridge-aware policy on validation data before freezing the test method.
+
+Do not run the full test split yet. The validation comparison determines
+whether the current candidate policy is frozen or revised.
