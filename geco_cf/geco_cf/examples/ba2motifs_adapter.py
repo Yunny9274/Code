@@ -27,11 +27,14 @@ def build_experiment(config: dict):
 
     dataset = BA2MotifDataset(root=str(data_root))
     split = load_split(split_path)
+    evaluation_split = config.get("evaluation_split", "test")
+    if evaluation_split not in split:
+        raise ValueError(f"unsupported evaluation_split: {evaluation_split}")
     checkpoint = torch.load(checkpoint_path, map_location=device)
     model_kwargs = checkpoint.get("model_kwargs")
     if not isinstance(model_kwargs, dict):
         raise ValueError("checkpoint must contain model_kwargs")
     model = BA2MotifGCN(**model_kwargs)
     model.load_state_dict(checkpoint["model_state"])
-    test_graphs = load_graphs(dataset, split["test"])
-    return test_graphs, PyGGraphPredictor(model, device)
+    graphs = load_graphs(dataset, split[evaluation_split])
+    return graphs, PyGGraphPredictor(model, device)

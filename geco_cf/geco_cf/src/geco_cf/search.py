@@ -211,11 +211,29 @@ def summarize_search(results: list[dict[str, Any]], config: SearchConfig) -> dic
         return summary
     successes = [result for result in results if result["success"]]
     labels = sorted({result["label"] for result in results if result["label"] is not None})
+    by_label: dict[str, dict[str, Any]] = {}
+    for label in labels:
+        label_results = [result for result in results if result["label"] == label]
+        label_successes = [result for result in label_results if result["success"]]
+        by_label[str(label)] = {
+            "num_graphs": len(label_results),
+            "num_successes": len(label_successes),
+            "validity": len(label_successes) / len(label_results),
+            "mean_edit_count_success": (
+                float(np.mean([result["edit_count"] for result in label_successes]))
+                if label_successes
+                else None
+            ),
+            "mean_forward_calls": float(
+                np.mean([result["forward_calls"] for result in label_results])
+            ),
+        }
     summary.update(
         {
             "label_counts": {
                 str(label): sum(result["label"] == label for result in results) for label in labels
             },
+            "by_label": by_label,
             "num_successes": len(successes),
             "validity": len(successes) / len(results),
             "mean_edit_count_success": (

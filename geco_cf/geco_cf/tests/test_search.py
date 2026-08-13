@@ -76,3 +76,7 @@ def test_run_search_can_cap_each_class_for_balanced_smoke():
         "0": 2,
         "1": 2,
     }
+    by_label = summarize_search(results, SearchConfig(max_edits=1))["by_label"]
+    assert by_label["0"]["num_graphs"] == 2
+    assert by_label["0"]["validity"] == 0.0
+    assert by_label["1"]["num_graphs"] == 2

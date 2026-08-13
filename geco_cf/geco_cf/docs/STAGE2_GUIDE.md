@@ -81,3 +81,31 @@ community-guided candidate expansion using the same output contract. Only
 after both algorithms pass matched smoke tests will we run BA2Motifs fully,
 add Random-CF and ablations, and proceed to Mutagenicity and multiple
 predictor seeds.
+
+## Validation-only budget diagnostic
+
+The balanced five-edge smoke exposed a class-direction asymmetry: all sampled
+class-1 graphs flipped with one deletion, while no sampled class-0 graph
+flipped within five deletions. Do not increase the test budget in response.
+Use the fixed validation split and the same five examples per class to compare
+budgets 5 and 30:
+
+```bash
+for budget in 5 30; do
+  CUDA_VISIBLE_DEVICES=0 PYTHONPATH=src:. python scripts/run_search.py \
+    --config configs/global_greedy_ba2motifs_val_budget${budget}.json \
+    --factory examples.ba2motifs_adapter:build_experiment \
+    --output-dir results/global_greedy_ba2motifs_val_budget${budget}
+  python scripts/validate_search.py \
+    --input-dir results/global_greedy_ba2motifs_val_budget${budget}
+done
+```
+
+Both summaries must report `label_counts={"0": 5, "1": 5}` and include the
+new `by_label` section. Budget 30 exceeds the number of unique undirected
+edges in these graphs, so it follows the greedy trajectory until a flip or
+until no edge remains. If class 0 still has zero validity, increasing a
+deletion budget cannot repair the observed directionality along this search;
+the full paper must report per-class validity and later consider edge addition
+as a separate edit setting. This diagnostic is not a full validation-set
+benchmark and must not be pooled with test results.
