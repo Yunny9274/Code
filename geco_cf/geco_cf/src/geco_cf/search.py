@@ -30,6 +30,7 @@ class SearchConfig:
     seed: int = 0
     community_method: str = "louvain"
     alpha: float = 0.5
+    bridge_policy: str = "none"
 
     def __post_init__(self) -> None:
         if self.method not in {"global_greedy", "geco_cf"}:
@@ -38,6 +39,8 @@ class SearchConfig:
             raise ValueError("max_edits must be positive")
         if self.alpha < 0:
             raise ValueError("alpha must be non-negative")
+        if self.bridge_policy not in {"none", "prefer_non_bridge"}:
+            raise ValueError(f"unsupported bridge_policy: {self.bridge_policy}")
 
 
 def _label(graph: Any) -> int | None:
@@ -61,6 +64,39 @@ def _component_stats(graph: nx.Graph, removed: set[Edge]) -> tuple[int, float]:
     components = list(nx.connected_components(edited))
     largest_ratio = max((len(component) for component in components), default=0) / edited.number_of_nodes()
     return len(components), float(largest_ratio)
+
+
+def _current_bridges(graph: nx.Graph, removed: set[Edge]) -> set[Edge]:
+    edited = graph.copy()
+    edited.remove_edges_from(removed)
+    return canonical_edges(nx.bridges(edited))
+
+
+def _select_candidate(
+    available: dict[Edge, tuple[np.ndarray, float]],
+    margin_before: float,
+    bridges: set[Edge],
+    bridge_policy: str,
+    original_prediction: int,
+) -> Edge:
+    """Select by validity first, then optional connectivity preservation."""
+    if bridge_policy == "none":
+        return min(available, key=lambda edge: (available[edge][1], edge))
+    flipping = [
+        edge
+        for edge, (logits, _) in available.items()
+        if int(logits.argmax()) != original_prediction
+    ]
+    if flipping:
+        flipping_non_bridges = [edge for edge in flipping if edge not in bridges]
+        pool = flipping_non_bridges or flipping
+        return min(pool, key=lambda edge: (available[edge][1], edge))
+    improving_non_bridges = [
+        edge for edge, (_, margin) in available.items() if edge not in bridges and margin < margin_before
+    ]
+    if improving_non_bridges:
+        return min(improving_non_bridges, key=lambda edge: (available[edge][1], edge))
+    return min(available, key=lambda edge: (available[edge][1], edge))
 
 
 def _base_result(
@@ -291,6 +327,7 @@ def evaluate_geco_cf(
 
     for step_index in range(1, edit_budget + 1):
         margin_before = class_margin(current_logits, original_prediction)
+        current_bridges = _current_bridges(nx_graph, removed)
         evaluated: dict[Edge, tuple[np.ndarray, float]] = {}
         selected_edge: Edge | None = None
         selected_logits: np.ndarray | None = None
@@ -309,9 +346,22 @@ def evaluate_geco_cf(
                 edge: values for edge, values in evaluated.items() if edge in stage_edges and edge not in removed
             }
             if available:
-                best_edge = min(available, key=lambda edge: (available[edge][1], edge))
+                best_edge = _select_candidate(
+                    available,
+                    margin_before,
+                    current_bridges,
+                    config.bridge_policy,
+                    original_prediction,
+                )
                 best_logits, best_margin = available[best_edge]
                 is_global_stage = current_stage == len(stages) - 1
+                if (
+                    config.bridge_policy == "prefer_non_bridge"
+                    and best_edge in current_bridges
+                    and not is_global_stage
+                ):
+                    current_stage += 1
+                    continue
                 if best_margin < margin_before or is_global_stage:
                     selected_edge = best_edge
                     selected_logits = best_logits
@@ -337,6 +387,7 @@ def evaluate_geco_cf(
                 "stage": stages[current_stage][0],
                 "stage_start": stages[stage_start][0],
                 "stages_examined": current_stage - stage_start + 1,
+                "selected_was_bridge": selected_edge in current_bridges,
             }
         )
         if current_prediction != original_prediction:
@@ -392,6 +443,11 @@ def evaluate_geco_cf(
     result["num_internal_edits"] = internal_edits
     result["num_boundary_edits"] = len(removed) - internal_edits
     result["num_communities_touched"] = len(touched)
+    selected_bridge_status = {
+        tuple(step["selected_edge"]): bool(step["selected_was_bridge"]) for step in steps
+    }
+    result["num_bridge_edits"] = sum(selected_bridge_status.get(edge, False) for edge in removed)
+    result["bridge_edit_rate"] = result["num_bridge_edits"] / max(len(removed), 1)
     return result
 
 
@@ -506,6 +562,12 @@ def summarize_search(results: list[dict[str, Any]], config: SearchConfig) -> dic
             "mean_communities_touched_success": (
                 float(np.mean([result["num_communities_touched"] for result in successes]))
                 if successes and all("num_communities_touched" in result for result in successes)
+                else None
+            ),
+            "bridge_edit_rate_success": (
+                sum(result.get("num_bridge_edits", 0) for result in successes)
+                / max(sum(result["edit_count"] for result in successes), 1)
+                if successes and all("num_bridge_edits" in result for result in successes)
                 else None
             ),
         }

@@ -117,3 +117,36 @@ def test_geco_cf_expands_from_boundary_and_counts_coarse_queries(tmp_path):
     summary = summarize_search([result], config)
     write_search_results(tmp_path, [result], summary)
     assert validate(tmp_path)["valid"] is True
+
+
+def test_bridge_aware_geco_cf_prefers_non_bridge_flip():
+    graph = ToyGraph()
+    graph.add_edges_from([(0, 1), (1, 2), (0, 2), (2, 3), (3, 4), (4, 5), (3, 5)])
+
+    def bridge_predictor(graph, removed_edges=()):
+        removed = canonical_edges(removed_edges)
+        if (2, 3) in removed:
+            return np.array([-2.0, 0.0])
+        if (0, 1) in removed:
+            return np.array([-1.0, 0.0])
+        return np.array([3.0, 0.0])
+
+    plain = evaluate_geco_cf(
+        graph,
+        bridge_predictor,
+        SearchConfig(method="geco_cf", max_edits=1, bridge_policy="none"),
+        "plain",
+    )
+    aware = evaluate_geco_cf(
+        graph,
+        bridge_predictor,
+        SearchConfig(method="geco_cf", max_edits=1, bridge_policy="prefer_non_bridge"),
+        "aware",
+    )
+    assert plain is not None and aware is not None
+    assert plain["success"] is True and aware["success"] is True
+    assert plain["removed_edges"] == [[2, 3]]
+    assert plain["num_bridge_edits"] == 1
+    assert aware["removed_edges"] == [[0, 1]]
+    assert aware["num_bridge_edits"] == 0
+    assert aware["forward_calls"] > plain["forward_calls"]

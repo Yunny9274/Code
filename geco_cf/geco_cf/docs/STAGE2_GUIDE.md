@@ -218,3 +218,52 @@ decision rule is:
 
 Do not run the full test split yet. The validation comparison determines
 whether the current candidate policy is frozen or revised.
+
+The full validation comparison preserved exactly the same 51 successful
+graphs and one-edge explanations and reduced total queries by 11.16\%, but
+confirmed worse connectivity: mean component increase rose from 0.451 to
+1.000 and the largest-component ratio decrease grew from 0.087 to 0.200.
+Moreover, 98.04\% of GECo-CF's successful edits were community-boundary
+edges. The current policy is therefore not frozen.
+
+## Step 5: bridge-aware validation ablation
+
+The bridge-aware policy preserves validity as the first objective. Among
+candidates that already flip the prediction, it prefers a non-bridge edge;
+otherwise it prefers a margin-reducing non-bridge edge. If no such alternative
+exists after candidate expansion, it still permits a bridge, so connectivity
+is not a hard constraint and fallback validity is retained. Bridges are
+recomputed after each committed deletion.
+
+Run the ablation only on the complete validation split:
+
+```bash
+CUDA_VISIBLE_DEVICES=0 PYTHONPATH=src:. python scripts/run_search.py \
+  --config configs/geco_cf_bridge_aware_ba2motifs_val_full.json \
+  --factory examples.ba2motifs_adapter:build_experiment \
+  --output-dir results/geco_cf_bridge_aware_ba2motifs_val_full
+python scripts/validate_search.py \
+  --input-dir results/geco_cf_bridge_aware_ba2motifs_val_full
+
+PYTHONPATH=src:. python scripts/compare_searches.py \
+  --baseline-dir results/geco_cf_ba2motifs_val_full \
+  --candidate-dir results/geco_cf_bridge_aware_ba2motifs_val_full \
+  --output results/geco_cf_bridge_ablation_ba2motifs_val.json
+
+PYTHONPATH=src:. python scripts/compare_searches.py \
+  --baseline-dir results/global_greedy_ba2motifs_val_full \
+  --candidate-dir results/geco_cf_bridge_aware_ba2motifs_val_full \
+  --output results/global_vs_geco_cf_bridge_ba2motifs_val.json
+```
+
+Report the bridge-aware summary, validator output, and both comparison JSON
+objects. Freeze the bridge-aware policy only if all conditions hold:
+
+- validity is not lower than the current GECo-CF policy;
+- mean edit count on jointly successful instances does not increase;
+- component increase and largest-component loss both improve materially;
+- total forward calls remain below Global-Greedy after all expansion and
+  community-scoring costs.
+
+Otherwise retain the simpler policy and report the efficiency/connectivity
+trade-off. Do not select a policy from test results.
