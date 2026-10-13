@@ -1,0 +1,18 @@
+{
+  "experiment": "stage2_test_search",
+  "method": "geco_cf",
+  "dataset": "BA2Motifs",
+  "data_root": "data/BA2Motif",
+  "checkpoint": "checkpoints/ba2motifs_seed0/model.pt",
+  "split": "checkpoints/ba2motifs_seed0/split.json",
+  "evaluation_split": "test",
+  "device": "cuda:0",
+  "seed": 0,
+  "community_method": "louvain",
+  "alpha": 0.5,
+  "max_edits": 5,
+  "reverse_prune": true,
+  "correct_only": true,
+  "min_original_margin": 0.0,
+  "max_graphs": null
+}

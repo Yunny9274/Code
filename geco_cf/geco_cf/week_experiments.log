@@ -1,0 +1,794 @@
+
+########## A1 alpha=0.0 (val) ##########
+D:\Anaconda\envs\pytorch\python.exe C:\Users\Miss Wang\WorkBuddy\2026-09-23-16-04-10\tools\run_local.py scripts/run_search.py --config results\_cpu_configs\geco_cf_ba2motifs_val_full__alpha=0.0.json --factory examples.ba2motifs_adapter:build_experiment --output-dir results/ablation_alpha0_val
+{
+  "config": {
+    "method": "geco_cf",
+    "max_edits": 5,
+    "reverse_prune": true,
+    "correct_only": true,
+    "min_original_margin": 0.0,
+    "seed": 0,
+    "community_method": "louvain",
+    "alpha": 0.0,
+    "bridge_policy": "none"
+  },
+  "num_graphs": 100,
+  "label_counts": {
+    "0": 50,
+    "1": 50
+  },
+  "by_label": {
+    "0": {
+      "num_graphs": 50,
+      "num_successes": 0,
+      "validity": 0.0,
+      "mean_edit_count_success": null,
+      "mean_forward_calls": 117.46
+    },
+    "1": {
+      "num_graphs": 50,
+      "num_successes": 50,
+      "validity": 1.0,
+      "mean_edit_count_success": 1.0,
+      "mean_forward_calls": 9.44
+    }
+  },
+  "num_successes": 50,
+  "validity": 0.5,
+  "mean_edit_count_success": 1.0,
+  "mean_normalized_edit_distance_success": 0.038461538461538464,
+  "mean_forward_calls": 63.45,
+  "total_forward_calls": 6345,
+  "mean_candidate_evaluations": 57.09,
+  "mean_community_scoring_calls": 4.86,
+  "mean_runtime_seconds": 0.062331164000788704,
+  "mean_component_increase_success": 1.0,
+  "mean_largest_component_ratio_change_success": -0.20799999999999993,
+  "boundary_edit_rate_success": 1.0,
+  "mean_communities_touched_success": 2.0,
+  "bridge_edit_rate_success": 1.0
+}
+
+exit=0  elapsed=16.2s
+D:\Anaconda\envs\pytorch\python.exe C:\Users\Miss Wang\WorkBuddy\2026-09-23-16-04-10\tools\run_local.py scripts/validate_search.py --input-dir results/ablation_alpha0_val
+{
+  "valid": true,
+  "num_graphs": 100,
+  "num_successes": 50,
+  "total_forward_calls": 6345,
+  "files": [
+    "graphs.jsonl",
+    "steps.csv",
+    "summary.json"
+  ]
+}
+
+validate exit=0
+
+########## A2 alpha=1.0 (val) ##########
+D:\Anaconda\envs\pytorch\python.exe C:\Users\Miss Wang\WorkBuddy\2026-09-23-16-04-10\tools\run_local.py scripts/run_search.py --config results\_cpu_configs\geco_cf_ba2motifs_val_full__alpha=1.0.json --factory examples.ba2motifs_adapter:build_experiment --output-dir results/ablation_alpha1_val
+{
+  "config": {
+    "method": "geco_cf",
+    "max_edits": 5,
+    "reverse_prune": true,
+    "correct_only": true,
+    "min_original_margin": 0.0,
+    "seed": 0,
+    "community_method": "louvain",
+    "alpha": 1.0,
+    "bridge_policy": "none"
+  },
+  "num_graphs": 100,
+  "label_counts": {
+    "0": 50,
+    "1": 50
+  },
+  "by_label": {
+    "0": {
+      "num_graphs": 50,
+      "num_successes": 0,
+      "validity": 0.0,
+      "mean_edit_count_success": null,
+      "mean_forward_calls": 117.56
+    },
+    "1": {
+      "num_graphs": 50,
+      "num_successes": 50,
+      "validity": 1.0,
+      "mean_edit_count_success": 1.0,
+      "mean_forward_calls": 8.64
+    }
+  },
+  "num_successes": 50,
+  "validity": 0.5,
+  "mean_edit_count_success": 1.0,
+  "mean_normalized_edit_distance_success": 0.038461538461538464,
+  "mean_forward_calls": 63.1,
+  "total_forward_calls": 6310,
+  "mean_candidate_evaluations": 56.74,
+  "mean_community_scoring_calls": 4.86,
+  "mean_runtime_seconds": 0.06108955899748253,
+  "mean_component_increase_success": 1.0,
+  "mean_largest_component_ratio_change_success": -0.20719999999999994,
+  "boundary_edit_rate_success": 1.0,
+  "mean_communities_touched_success": 2.0,
+  "bridge_edit_rate_success": 1.0
+}
+
+exit=0  elapsed=15.9s
+D:\Anaconda\envs\pytorch\python.exe C:\Users\Miss Wang\WorkBuddy\2026-09-23-16-04-10\tools\run_local.py scripts/validate_search.py --input-dir results/ablation_alpha1_val
+{
+  "valid": true,
+  "num_graphs": 100,
+  "num_successes": 50,
+  "total_forward_calls": 6310,
+  "files": [
+    "graphs.jsonl",
+    "steps.csv",
+    "summary.json"
+  ]
+}
+
+validate exit=0
+
+########## A3 greedy_modularity (val) ##########
+D:\Anaconda\envs\pytorch\python.exe C:\Users\Miss Wang\WorkBuddy\2026-09-23-16-04-10\tools\run_local.py scripts/run_search.py --config results\_cpu_configs\geco_cf_ba2motifs_val_full__community_method=greedy_modularity.json --factory examples.ba2motifs_adapter:build_experiment --output-dir results/ablation_greedymod_val
+{
+  "config": {
+    "method": "geco_cf",
+    "max_edits": 5,
+    "reverse_prune": true,
+    "correct_only": true,
+    "min_original_margin": 0.0,
+    "seed": 0,
+    "community_method": "greedy_modularity",
+    "alpha": 0.5,
+    "bridge_policy": "none"
+  },
+  "num_graphs": 100,
+  "label_counts": {
+    "0": 50,
+    "1": 50
+  },
+  "by_label": {
+    "0": {
+      "num_graphs": 50,
+      "num_successes": 0,
+      "validity": 0.0,
+      "mean_edit_count_success": null,
+      "mean_forward_calls": 117.3
+    },
+    "1": {
+      "num_graphs": 50,
+      "num_successes": 50,
+      "validity": 1.0,
+      "mean_edit_count_success": 1.0,
+      "mean_forward_calls": 8.78
+    }
+  },
+  "num_successes": 50,
+  "validity": 0.5,
+  "mean_edit_count_success": 1.0,
+  "mean_normalized_edit_distance_success": 0.038461538461538464,
+  "mean_forward_calls": 63.04,
+  "total_forward_calls": 6304,
+  "mean_candidate_evaluations": 56.62,
+  "mean_community_scoring_calls": 4.92,
+  "mean_runtime_seconds": 0.06053014499862911,
+  "mean_component_increase_success": 1.0,
+  "mean_largest_component_ratio_change_success": -0.20159999999999992,
+  "boundary_edit_rate_success": 1.0,
+  "mean_communities_touched_success": 2.0,
+  "bridge_edit_rate_success": 1.0
+}
+
+exit=0  elapsed=15.9s
+D:\Anaconda\envs\pytorch\python.exe C:\Users\Miss Wang\WorkBuddy\2026-09-23-16-04-10\tools\run_local.py scripts/validate_search.py --input-dir results/ablation_greedymod_val
+{
+  "valid": true,
+  "num_graphs": 100,
+  "num_successes": 50,
+  "total_forward_calls": 6304,
+  "files": [
+    "graphs.jsonl",
+    "steps.csv",
+    "summary.json"
+  ]
+}
+
+validate exit=0
+
+########## A4 bridge-aware + alpha=0.0 (val) ##########
+D:\Anaconda\envs\pytorch\python.exe C:\Users\Miss Wang\WorkBuddy\2026-09-23-16-04-10\tools\run_local.py scripts/run_search.py --config results\_cpu_configs\geco_cf_bridge_aware_ba2motifs_val_full__alpha=0.0.json --factory examples.ba2motifs_adapter:build_experiment --output-dir results/ablation_bridge_alpha0_val
+{
+  "config": {
+    "method": "geco_cf",
+    "max_edits": 5,
+    "reverse_prune": true,
+    "correct_only": true,
+    "min_original_margin": 0.0,
+    "seed": 0,
+    "community_method": "louvain",
+    "alpha": 0.0,
+    "bridge_policy": "prefer_non_bridge"
+  },
+  "num_graphs": 100,
+  "label_counts": {
+    "0": 50,
+    "1": 50
+  },
+  "by_label": {
+    "0": {
+      "num_graphs": 50,
+      "num_successes": 0,
+      "validity": 0.0,
+      "mean_edit_count_success": null,
+      "mean_forward_calls": 120.76
+    },
+    "1": {
+      "num_graphs": 50,
+      "num_successes": 50,
+      "validity": 1.0,
+      "mean_edit_count_success": 1.0,
+      "mean_forward_calls": 19.12
+    }
+  },
+  "num_successes": 50,
+  "validity": 0.5,
+  "mean_edit_count_success": 1.0,
+  "mean_normalized_edit_distance_success": 0.038461538461538464,
+  "mean_forward_calls": 69.94,
+  "total_forward_calls": 6994,
+  "mean_candidate_evaluations": 63.58,
+  "mean_community_scoring_calls": 4.86,
+  "mean_runtime_seconds": 0.06664592999819434,
+  "mean_component_increase_success": 0.0,
+  "mean_largest_component_ratio_change_success": 0.0,
+  "boundary_edit_rate_success": 0.0,
+  "mean_communities_touched_success": 1.0,
+  "bridge_edit_rate_success": 0.0
+}
+
+exit=0  elapsed=19.3s
+D:\Anaconda\envs\pytorch\python.exe C:\Users\Miss Wang\WorkBuddy\2026-09-23-16-04-10\tools\run_local.py scripts/validate_search.py --input-dir results/ablation_bridge_alpha0_val
+{
+  "valid": true,
+  "num_graphs": 100,
+  "num_successes": 50,
+  "total_forward_calls": 6994,
+  "files": [
+    "graphs.jsonl",
+    "steps.csv",
+    "summary.json"
+  ]
+}
+
+validate exit=0
+
+########## A5 bridge-aware + greedy_modularity (val) ##########
+D:\Anaconda\envs\pytorch\python.exe C:\Users\Miss Wang\WorkBuddy\2026-09-23-16-04-10\tools\run_local.py scripts/run_search.py --config results\_cpu_configs\geco_cf_bridge_aware_ba2motifs_val_full__community_method=greedy_modularity.json --factory examples.ba2motifs_adapter:build_experiment --output-dir results/ablation_bridge_greedymod_val
+{
+  "config": {
+    "method": "geco_cf",
+    "max_edits": 5,
+    "reverse_prune": true,
+    "correct_only": true,
+    "min_original_margin": 0.0,
+    "seed": 0,
+    "community_method": "greedy_modularity",
+    "alpha": 0.5,
+    "bridge_policy": "prefer_non_bridge"
+  },
+  "num_graphs": 100,
+  "label_counts": {
+    "0": 50,
+    "1": 50
+  },
+  "by_label": {
+    "0": {
+      "num_graphs": 50,
+      "num_successes": 0,
+      "validity": 0.0,
+      "mean_edit_count_success": null,
+      "mean_forward_calls": 120.8
+    },
+    "1": {
+      "num_graphs": 50,
+      "num_successes": 50,
+      "validity": 1.0,
+      "mean_edit_count_success": 1.0,
+      "mean_forward_calls": 16.12
+    }
+  },
+  "num_successes": 50,
+  "validity": 0.5,
+  "mean_edit_count_success": 1.0,
+  "mean_normalized_edit_distance_success": 0.038461538461538464,
+  "mean_forward_calls": 68.46,
+  "total_forward_calls": 6846,
+  "mean_candidate_evaluations": 62.04,
+  "mean_community_scoring_calls": 4.92,
+  "mean_runtime_seconds": 0.06528137499815784,
+  "mean_component_increase_success": 0.0,
+  "mean_largest_component_ratio_change_success": 0.0,
+  "boundary_edit_rate_success": 0.0,
+  "mean_communities_touched_success": 1.0,
+  "bridge_edit_rate_success": 0.0
+}
+
+exit=0  elapsed=16.3s
+D:\Anaconda\envs\pytorch\python.exe C:\Users\Miss Wang\WorkBuddy\2026-09-23-16-04-10\tools\run_local.py scripts/validate_search.py --input-dir results/ablation_bridge_greedymod_val
+{
+  "valid": true,
+  "num_graphs": 100,
+  "num_successes": 50,
+  "total_forward_calls": 6846,
+  "files": [
+    "graphs.jsonl",
+    "steps.csv",
+    "summary.json"
+  ]
+}
+
+validate exit=0
+
+########## B1 global-greedy (test) ##########
+D:\Anaconda\envs\pytorch\python.exe C:\Users\Miss Wang\WorkBuddy\2026-09-23-16-04-10\tools\run_local.py scripts/run_search.py --config results\_cpu_configs\global_greedy_ba2motifs_test_full.json --factory examples.ba2motifs_adapter:build_experiment --output-dir results/global_greedy_ba2motifs_test_full
+{
+  "config": {
+    "method": "global_greedy",
+    "max_edits": 5,
+    "reverse_prune": true,
+    "correct_only": true,
+    "min_original_margin": 0.0,
+    "seed": 0,
+    "community_method": "louvain",
+    "alpha": 0.5,
+    "bridge_policy": "none"
+  },
+  "num_graphs": 98,
+  "label_counts": {
+    "0": 49,
+    "1": 49
+  },
+  "by_label": {
+    "0": {
+      "num_graphs": 49,
+      "num_successes": 0,
+      "validity": 0.0,
+      "mean_edit_count_success": null,
+      "mean_forward_calls": 116.0
+    },
+    "1": {
+      "num_graphs": 49,
+      "num_successes": 49,
+      "validity": 1.0,
+      "mean_edit_count_success": 1.0,
+      "mean_forward_calls": 27.918367346938776
+    }
+  },
+  "num_successes": 49,
+  "validity": 0.5,
+  "mean_edit_count_success": 1.0,
+  "mean_normalized_edit_distance_success": 0.03858712715855574,
+  "mean_forward_calls": 71.95918367346938,
+  "total_forward_calls": 7052,
+  "mean_candidate_evaluations": 70.45918367346938,
+  "mean_community_scoring_calls": 0.0,
+  "mean_runtime_seconds": 0.06322703367438909,
+  "mean_component_increase_success": 0.16326530612244897,
+  "mean_largest_component_ratio_change_success": -0.03265306122448979,
+  "boundary_edit_rate_success": null,
+  "mean_communities_touched_success": null,
+  "bridge_edit_rate_success": null
+}
+
+exit=0  elapsed=16.0s
+D:\Anaconda\envs\pytorch\python.exe C:\Users\Miss Wang\WorkBuddy\2026-09-23-16-04-10\tools\run_local.py scripts/validate_search.py --input-dir results/global_greedy_ba2motifs_test_full
+{
+  "valid": true,
+  "num_graphs": 98,
+  "num_successes": 49,
+  "total_forward_calls": 7052,
+  "files": [
+    "graphs.jsonl",
+    "steps.csv",
+    "summary.json"
+  ]
+}
+
+validate exit=0
+
+########## B2 geco-cf (test) ##########
+D:\Anaconda\envs\pytorch\python.exe C:\Users\Miss Wang\WorkBuddy\2026-09-23-16-04-10\tools\run_local.py scripts/run_search.py --config results\_cpu_configs\geco_cf_ba2motifs_test_full.json --factory examples.ba2motifs_adapter:build_experiment --output-dir results/geco_cf_ba2motifs_test_full
+{
+  "config": {
+    "method": "geco_cf",
+    "max_edits": 5,
+    "reverse_prune": true,
+    "correct_only": true,
+    "min_original_margin": 0.0,
+    "seed": 0,
+    "community_method": "louvain",
+    "alpha": 0.5,
+    "bridge_policy": "none"
+  },
+  "num_graphs": 98,
+  "label_counts": {
+    "0": 49,
+    "1": 49
+  },
+  "by_label": {
+    "0": {
+      "num_graphs": 49,
+      "num_successes": 0,
+      "validity": 0.0,
+      "mean_edit_count_success": null,
+      "mean_forward_calls": 116.95918367346938
+    },
+    "1": {
+      "num_graphs": 49,
+      "num_successes": 49,
+      "validity": 1.0,
+      "mean_edit_count_success": 1.0,
+      "mean_forward_calls": 8.877551020408163
+    }
+  },
+  "num_successes": 49,
+  "validity": 0.5,
+  "mean_edit_count_success": 1.0,
+  "mean_normalized_edit_distance_success": 0.03858712715855574,
+  "mean_forward_calls": 62.91836734693877,
+  "total_forward_calls": 6166,
+  "mean_candidate_evaluations": 56.5,
+  "mean_community_scoring_calls": 4.918367346938775,
+  "mean_runtime_seconds": 0.05866315714333074,
+  "mean_component_increase_success": 0.9183673469387755,
+  "mean_largest_component_ratio_change_success": -0.1861224489795918,
+  "boundary_edit_rate_success": 0.9183673469387755,
+  "mean_communities_touched_success": 1.9183673469387754,
+  "bridge_edit_rate_success": 0.9183673469387755
+}
+
+exit=0  elapsed=17.9s
+D:\Anaconda\envs\pytorch\python.exe C:\Users\Miss Wang\WorkBuddy\2026-09-23-16-04-10\tools\run_local.py scripts/validate_search.py --input-dir results/geco_cf_ba2motifs_test_full
+{
+  "valid": true,
+  "num_graphs": 98,
+  "num_successes": 49,
+  "total_forward_calls": 6166,
+  "files": [
+    "graphs.jsonl",
+    "steps.csv",
+    "summary.json"
+  ]
+}
+
+validate exit=0
+
+########## B3 bridge-aware (test) ##########
+D:\Anaconda\envs\pytorch\python.exe C:\Users\Miss Wang\WorkBuddy\2026-09-23-16-04-10\tools\run_local.py scripts/run_search.py --config results\_cpu_configs\geco_cf_bridge_aware_ba2motifs_test_full.json --factory examples.ba2motifs_adapter:build_experiment --output-dir results/geco_cf_bridge_aware_ba2motifs_test_full
+{
+  "config": {
+    "method": "geco_cf",
+    "max_edits": 5,
+    "reverse_prune": true,
+    "correct_only": true,
+    "min_original_margin": 0.0,
+    "seed": 0,
+    "community_method": "louvain",
+    "alpha": 0.5,
+    "bridge_policy": "prefer_non_bridge"
+  },
+  "num_graphs": 98,
+  "label_counts": {
+    "0": 49,
+    "1": 49
+  },
+  "by_label": {
+    "0": {
+      "num_graphs": 49,
+      "num_successes": 0,
+      "validity": 0.0,
+      "mean_edit_count_success": null,
+      "mean_forward_calls": 120.87755102040816
+    },
+    "1": {
+      "num_graphs": 49,
+      "num_successes": 49,
+      "validity": 1.0,
+      "mean_edit_count_success": 1.0,
+      "mean_forward_calls": 15.36734693877551
+    }
+  },
+  "num_successes": 49,
+  "validity": 0.5,
+  "mean_edit_count_success": 1.0,
+  "mean_normalized_edit_distance_success": 0.03858712715855574,
+  "mean_forward_calls": 68.12244897959184,
+  "total_forward_calls": 6676,
+  "mean_candidate_evaluations": 61.704081632653065,
+  "mean_community_scoring_calls": 4.918367346938775,
+  "mean_runtime_seconds": 0.06505031836764383,
+  "mean_component_increase_success": 0.0,
+  "mean_largest_component_ratio_change_success": 0.0,
+  "boundary_edit_rate_success": 0.0,
+  "mean_communities_touched_success": 1.0,
+  "bridge_edit_rate_success": 0.0
+}
+
+exit=0  elapsed=16.2s
+D:\Anaconda\envs\pytorch\python.exe C:\Users\Miss Wang\WorkBuddy\2026-09-23-16-04-10\tools\run_local.py scripts/validate_search.py --input-dir results/geco_cf_bridge_aware_ba2motifs_test_full
+{
+  "valid": true,
+  "num_graphs": 98,
+  "num_successes": 49,
+  "total_forward_calls": 6676,
+  "files": [
+    "graphs.jsonl",
+    "steps.csv",
+    "summary.json"
+  ]
+}
+
+validate exit=0
+
+########## C1 global vs geco (test) ##########
+D:\Anaconda\envs\pytorch\python.exe C:\Users\Miss Wang\WorkBuddy\2026-09-23-16-04-10\tools\run_local.py scripts/compare_searches.py --baseline-dir results/global_greedy_ba2motifs_test_full --candidate-dir results/geco_cf_ba2motifs_test_full --output results/cmp_test_global_vs_geco.json
+{
+  "matched": true,
+  "num_graphs": 98,
+  "baseline_method": "global_greedy",
+  "candidate_method": "geco_cf",
+  "overall": {
+    "num_graphs": 98,
+    "baseline_validity": 0.5,
+    "candidate_validity": 0.5,
+    "validity_difference": 0.0,
+    "both_success": 49,
+    "baseline_only_success": 0,
+    "candidate_only_success": 0,
+    "both_failed": 49,
+    "baseline_mean_forward_calls": 71.95918367346938,
+    "candidate_mean_forward_calls": 62.91836734693877,
+    "mean_forward_call_difference": -9.04081632653061,
+    "forward_call_reduction_rate": 0.12563811684628473,
+    "baseline_mean_candidate_evaluations": 70.45918367346938,
+    "candidate_mean_candidate_evaluations": 56.5,
+    "candidate_evaluation_reduction_rate": 0.19811730629978272,
+    "candidate_mean_community_scoring_calls": 4.918367346938775,
+    "num_joint_successes": 49,
+    "baseline_mean_edit_count_joint_success": 1.0,
+    "candidate_mean_edit_count_joint_success": 1.0,
+    "mean_edit_count_difference_joint_success": 0.0,
+    "baseline_mean_component_increase_joint_success": 0.16326530612244897,
+    "candidate_mean_component_increase_joint_success": 0.9183673469387755,
+    "mean_component_increase_difference_joint_success": 0.7551020408163266,
+    "baseline_mean_largest_component_ratio_change_joint_success": -0.03265306122448979,
+    "candidate_mean_largest_component_ratio_change_joint_success": -0.1861224489795918
+  },
+  "by_label": {
+    "0": {
+      "num_graphs": 49,
+      "baseline_validity": 0.0,
+      "candidate_validity": 0.0,
+      "validity_difference": 0.0,
+      "both_success": 0,
+      "baseline_only_success": 0,
+      "candidate_only_success": 0,
+      "both_failed": 49,
+      "baseline_mean_forward_calls": 116.0,
+      "candidate_mean_forward_calls": 116.95918367346938,
+      "mean_forward_call_difference": 0.9591836734693828,
+      "forward_call_reduction_rate": -0.008268824771287783,
+      "baseline_mean_candidate_evaluations": 115.0,
+      "candidate_mean_candidate_evaluations": 111.08163265306122,
+      "candidate_evaluation_reduction_rate": 0.034072759538598084,
+      "candidate_mean_community_scoring_calls": 4.877551020408164,
+      "num_joint_successes": 0
+    },
+    "1": {
+      "num_graphs": 49,
+      "baseline_validity": 1.0,
+      "candidate_validity": 1.0,
+      "validity_difference": 0.0,
+      "both_success": 49,
+      "baseline_only_success": 0,
+      "candidate_only_success": 0,
+      "both_failed": 0,
+      "baseline_mean_forward_calls": 27.918367346938776,
+      "candidate_mean_forward_calls": 8.877551020408163,
+      "mean_forward_call_difference": -19.040816326530614,
+      "forward_call_reduction_rate": 0.6820175438596492,
+      "baseline_mean_candidate_evaluations": 25.918367346938776,
+      "candidate_mean_candidate_evaluations": 1.9183673469387754,
+      "candidate_evaluation_reduction_rate": 0.9259842519685039,
+      "candidate_mean_community_scoring_calls": 4.959183673469388,
+      "num_joint_successes": 49,
+      "baseline_mean_edit_count_joint_success": 1.0,
+      "candidate_mean_edit_count_joint_success": 1.0,
+      "mean_edit_count_difference_joint_success": 0.0,
+      "baseline_mean_component_increase_joint_success": 0.16326530612244897,
+      "candidate_mean_component_increase_joint_success": 0.9183673469387755,
+      "mean_component_increase_difference_joint_success": 0.7551020408163266,
+      "baseline_mean_largest_component_ratio_change_joint_success": -0.03265306122448979,
+      "candidate_mean_largest_component_ratio_change_joint_success": -0.1861224489795918
+    }
+  }
+}
+
+exit=0
+
+########## C2 global vs bridge (test) ##########
+D:\Anaconda\envs\pytorch\python.exe C:\Users\Miss Wang\WorkBuddy\2026-09-23-16-04-10\tools\run_local.py scripts/compare_searches.py --baseline-dir results/global_greedy_ba2motifs_test_full --candidate-dir results/geco_cf_bridge_aware_ba2motifs_test_full --output results/cmp_test_global_vs_bridge.json
+{
+  "matched": true,
+  "num_graphs": 98,
+  "baseline_method": "global_greedy",
+  "candidate_method": "geco_cf",
+  "overall": {
+    "num_graphs": 98,
+    "baseline_validity": 0.5,
+    "candidate_validity": 0.5,
+    "validity_difference": 0.0,
+    "both_success": 49,
+    "baseline_only_success": 0,
+    "candidate_only_success": 0,
+    "both_failed": 49,
+    "baseline_mean_forward_calls": 71.95918367346938,
+    "candidate_mean_forward_calls": 68.12244897959184,
+    "mean_forward_call_difference": -3.8367346938775455,
+    "forward_call_reduction_rate": 0.05331820760068059,
+    "baseline_mean_candidate_evaluations": 70.45918367346938,
+    "candidate_mean_candidate_evaluations": 61.704081632653065,
+    "candidate_evaluation_reduction_rate": 0.12425778421433732,
+    "candidate_mean_community_scoring_calls": 4.918367346938775,
+    "num_joint_successes": 49,
+    "baseline_mean_edit_count_joint_success": 1.0,
+    "candidate_mean_edit_count_joint_success": 1.0,
+    "mean_edit_count_difference_joint_success": 0.0,
+    "baseline_mean_component_increase_joint_success": 0.16326530612244897,
+    "candidate_mean_component_increase_joint_success": 0.0,
+    "mean_component_increase_difference_joint_success": -0.16326530612244897,
+    "baseline_mean_largest_component_ratio_change_joint_success": -0.03265306122448979,
+    "candidate_mean_largest_component_ratio_change_joint_success": 0.0
+  },
+  "by_label": {
+    "0": {
+      "num_graphs": 49,
+      "baseline_validity": 0.0,
+      "candidate_validity": 0.0,
+      "validity_difference": 0.0,
+      "both_success": 0,
+      "baseline_only_success": 0,
+      "candidate_only_success": 0,
+      "both_failed": 49,
+      "baseline_mean_forward_calls": 116.0,
+      "candidate_mean_forward_calls": 120.87755102040816,
+      "mean_forward_call_difference": 4.877551020408163,
+      "forward_call_reduction_rate": -0.0420478536242083,
+      "baseline_mean_candidate_evaluations": 115.0,
+      "candidate_mean_candidate_evaluations": 115.0,
+      "candidate_evaluation_reduction_rate": 0.0,
+      "candidate_mean_community_scoring_calls": 4.877551020408164,
+      "num_joint_successes": 0
+    },
+    "1": {
+      "num_graphs": 49,
+      "baseline_validity": 1.0,
+      "candidate_validity": 1.0,
+      "validity_difference": 0.0,
+      "both_success": 49,
+      "baseline_only_success": 0,
+      "candidate_only_success": 0,
+      "both_failed": 0,
+      "baseline_mean_forward_calls": 27.918367346938776,
+      "candidate_mean_forward_calls": 15.36734693877551,
+      "mean_forward_call_difference": -12.551020408163266,
+      "forward_call_reduction_rate": 0.44956140350877194,
+      "baseline_mean_candidate_evaluations": 25.918367346938776,
+      "candidate_mean_candidate_evaluations": 8.408163265306122,
+      "candidate_evaluation_reduction_rate": 0.6755905511811023,
+      "candidate_mean_community_scoring_calls": 4.959183673469388,
+      "num_joint_successes": 49,
+      "baseline_mean_edit_count_joint_success": 1.0,
+      "candidate_mean_edit_count_joint_success": 1.0,
+      "mean_edit_count_difference_joint_success": 0.0,
+      "baseline_mean_component_increase_joint_success": 0.16326530612244897,
+      "candidate_mean_component_increase_joint_success": 0.0,
+      "mean_component_increase_difference_joint_success": -0.16326530612244897,
+      "baseline_mean_largest_component_ratio_change_joint_success": -0.03265306122448979,
+      "candidate_mean_largest_component_ratio_change_joint_success": 0.0
+    }
+  }
+}
+
+exit=0
+
+########## C3 geco vs bridge (test) ##########
+D:\Anaconda\envs\pytorch\python.exe C:\Users\Miss Wang\WorkBuddy\2026-09-23-16-04-10\tools\run_local.py scripts/compare_searches.py --baseline-dir results/geco_cf_ba2motifs_test_full --candidate-dir results/geco_cf_bridge_aware_ba2motifs_test_full --output results/cmp_test_geco_vs_bridge.json
+{
+  "matched": true,
+  "num_graphs": 98,
+  "baseline_method": "geco_cf",
+  "candidate_method": "geco_cf",
+  "overall": {
+    "num_graphs": 98,
+    "baseline_validity": 0.5,
+    "candidate_validity": 0.5,
+    "validity_difference": 0.0,
+    "both_success": 49,
+    "baseline_only_success": 0,
+    "candidate_only_success": 0,
+    "both_failed": 49,
+    "baseline_mean_forward_calls": 62.91836734693877,
+    "candidate_mean_forward_calls": 68.12244897959184,
+    "mean_forward_call_difference": 5.204081632653065,
+    "forward_call_reduction_rate": -0.0827116445021084,
+    "baseline_mean_candidate_evaluations": 56.5,
+    "candidate_mean_candidate_evaluations": 61.704081632653065,
+    "candidate_evaluation_reduction_rate": -0.09210763951598344,
+    "candidate_mean_community_scoring_calls": 4.918367346938775,
+    "num_joint_successes": 49,
+    "baseline_mean_edit_count_joint_success": 1.0,
+    "candidate_mean_edit_count_joint_success": 1.0,
+    "mean_edit_count_difference_joint_success": 0.0,
+    "baseline_mean_component_increase_joint_success": 0.9183673469387755,
+    "candidate_mean_component_increase_joint_success": 0.0,
+    "mean_component_increase_difference_joint_success": -0.9183673469387755,
+    "baseline_mean_largest_component_ratio_change_joint_success": -0.1861224489795918,
+    "candidate_mean_largest_component_ratio_change_joint_success": 0.0
+  },
+  "by_label": {
+    "0": {
+      "num_graphs": 49,
+      "baseline_validity": 0.0,
+      "candidate_validity": 0.0,
+      "validity_difference": 0.0,
+      "both_success": 0,
+      "baseline_only_success": 0,
+      "candidate_only_success": 0,
+      "both_failed": 49,
+      "baseline_mean_forward_calls": 116.95918367346938,
+      "candidate_mean_forward_calls": 120.87755102040816,
+      "mean_forward_call_difference": 3.91836734693878,
+      "forward_call_reduction_rate": -0.03350200663060552,
+      "baseline_mean_candidate_evaluations": 111.08163265306122,
+      "candidate_mean_candidate_evaluations": 115.0,
+      "candidate_evaluation_reduction_rate": -0.03527466470696311,
+      "candidate_mean_community_scoring_calls": 4.877551020408164,
+      "num_joint_successes": 0
+    },
+    "1": {
+      "num_graphs": 49,
+      "baseline_validity": 1.0,
+      "candidate_validity": 1.0,
+      "validity_difference": 0.0,
+      "both_success": 49,
+      "baseline_only_success": 0,
+      "candidate_only_success": 0,
+      "both_failed": 0,
+      "baseline_mean_forward_calls": 8.877551020408163,
+      "candidate_mean_forward_calls": 15.36734693877551,
+      "mean_forward_call_difference": 6.4897959183673475,
+      "forward_call_reduction_rate": -0.7310344827586208,
+      "baseline_mean_candidate_evaluations": 1.9183673469387754,
+      "candidate_mean_candidate_evaluations": 8.408163265306122,
+      "candidate_evaluation_reduction_rate": -3.382978723404255,
+      "candidate_mean_community_scoring_calls": 4.959183673469388,
+      "num_joint_successes": 49,
+      "baseline_mean_edit_count_joint_success": 1.0,
+      "candidate_mean_edit_count_joint_success": 1.0,
+      "mean_edit_count_difference_joint_success": 0.0,
+      "baseline_mean_component_increase_joint_success": 0.9183673469387755,
+      "candidate_mean_component_increase_joint_success": 0.0,
+      "mean_component_increase_difference_joint_success": -0.9183673469387755,
+      "baseline_mean_largest_component_ratio_change_joint_success": -0.1861224489795918,
+      "candidate_mean_largest_component_ratio_change_joint_success": 0.0
+    }
+  }
+}
+
+exit=0

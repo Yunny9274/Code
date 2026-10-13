@@ -36,16 +36,17 @@ prioritizing boundary edges of influential communities before admitting
 intra-community and global edges. A fine-grained, iteratively rescored search
 finds a prediction-flipping edge set, after which reverse pruning removes
 redundant edits. This design aims to retain the validity of global search while
-reducing model queries and limiting damage to community structure. We evaluate
-the community-localization stage on BA-2Motifs before evaluating the complete
-counterfactual search. Across three community-detection and control seeds, the
-top-ranked community contains a globally Top-5 sensitive edge in
-$78.6$--$81.6\%$ of correctly classified test graphs, compared with
-$52.1$--$53.2\%$ for a random community. Its mean intervention-induced margin
-drop is also $3.55$--$3.64$ larger than the random control, with paired
-bootstrap intervals excluding zero. These results support community
-intervention as a coarse localization signal; validity, minimality, and
-efficiency of the complete search remain to be established.
+reducing model queries and limiting damage to community structure. We first
+establish a coarse-localization guarantee under bounded edge-interaction
+residuals, then test its practical premise on synthetic BA-2Motifs and the
+real-world Mutagenicity dataset. Across three community-detection and control
+seeds, the top-ranked community covers a globally Top-5 sensitive edge in
+$78.6$--$81.6\%$ and $85.3$--$87.3\%$ of eligible graphs, respectively,
+compared with $52.1$--$53.2\%$ and $57.3$--$59.0\%$ for random selection.
+Paired bootstrap intervals confirm the margin-drop and Top-5-coverage
+advantages on both datasets. These results support community intervention as
+a coarse localization signal; validity, minimality, and efficiency of the
+complete search remain to be established.
 
 \keywords{Graph neural networks \and Counterfactual explanations \and
 Explainable AI \and Community structure}
@@ -122,16 +123,20 @@ interpretable.
 The main contributions are:
 \begin{itemize}
   \item We formulate size-normalized community intervention as a coarse signal
-  for locating counterfactually sensitive regions of a graph.
+  for locating counterfactually sensitive regions and prove, under bounded
+  edge-interaction residuals, a lower bound on the most sensitive edge within
+  a scored community.
   \item We develop an adaptive coarse-to-fine search that prioritizes community
   boundaries but falls back to broader candidate sets to preserve validity.
   \item We introduce an evaluation protocol that reports prediction flips and
   edit size together with query cost and community-structure damage across
   graph- and node-classification tasks.
   \item We empirically test the community-guidance hypothesis against random,
-  largest-community, and global edge-sensitivity controls. On BA-2Motifs, the
-  top-ranked community covers a Top-5 sensitive edge in $78.6$--$81.6\%$ of
-  eligible graphs, versus $52.1$--$53.2\%$ for random selection.
+  largest-community controls, with a single-edge sensitivity oracle for
+  evaluation. On BA-2Motifs and
+  Mutagenicity, the top-ranked community covers a Top-5 sensitive edge in
+  $78.6$--$81.6\%$ and $85.3$--$87.3\%$ of eligible graphs, versus
+  $52.1$--$53.2\%$ and $57.3$--$59.0\%$ for random selection.
 \end{itemize}
 
 \section{Related Work}
@@ -203,8 +208,56 @@ temporarily mask $A(C_i)$ and define
   \qquad \alpha\geq 0.
 \end{equation}
 The intervention is used only to rank communities; it is not returned as the
-counterfactual. We use $\alpha=0.5$ as the provisional default and select its
-final value on validation data.
+counterfactual. We fix $\alpha=0.5$ for the Stage-1 hypothesis test; any later
+tuning for the complete method is restricted to validation data.
+
+\subsection{Coarse-Localization Guarantee}
+For an editable edge $e$, define its individual margin sensitivity as
+\begin{equation}
+  d_e=m_\tau(G)-m_\tau(G\setminus\{e\}).
+\end{equation}
+For a community $C$, write its unnormalized intervention effect as
+$D_C=m_\tau(G)-m_\tau(G\setminus A(C))$ and define the edge-interaction
+residual
+\begin{equation}
+  r_C=D_C-\sum_{e\in A(C)}d_e.
+\end{equation}
+The residual captures all non-additive interactions introduced by deleting
+the edges jointly. The following proposition formalizes the coarse-grained
+role of the community score.
+
+\begin{proposition}[Sensitive-edge lower bound]
+\label{prop:localization}
+If $|r_C|\leq\varepsilon_C$ for a nonempty intervention set $A(C)$, then
+\begin{equation}
+  \max_{e\in A(C)} d_e
+  \geq |A(C)|^{\alpha-1}\widetilde{s}_C
+  -\frac{\varepsilon_C}{|A(C)|}.
+  \label{eq:sensitive-lower-bound}
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+Because a maximum is at least the arithmetic mean,
+$\max_{e\in A(C)}d_e\geq |A(C)|^{-1}\sum_{e\in A(C)}d_e$. By the residual
+definition and $r_C\leq\varepsilon_C$, the sum is at least
+$D_C-\varepsilon_C$. Finally,
+$D_C=|A(C)|^\alpha\widetilde{s}_C$, which gives
+Eq.~\eqref{eq:sensitive-lower-bound}.
+\end{proof}
+
+Proposition~\ref{prop:localization} does not assert an unconditional monotone
+correlation for arbitrary nonlinear GNNs: large interaction residuals can
+produce synergy or cancellation. Instead, it states why community
+intervention is a valid coarse explanatory view when joint edge effects are
+approximately additive or their residual is controlled. For communities of
+equal intervention size and residual bound, ranking by $\widetilde{s}_C$
+directly ranks a lower bound on the strongest contained edge. With unequal
+sizes, $\alpha$ controls the trade-off between total intervention effect and
+local sensitivity. Our experiments therefore test two empirical implications:
+whether community scores correlate positively with contained edge sensitivity
+and whether the top-ranked community covers globally sensitive edges more
+often than size-based or random selection.
 
 \subsection{Adaptive Fine-Grained Search}
 Communities are ordered by $\widetilde{s}_i$. The candidate set initially
@@ -229,19 +282,19 @@ versions.
 
 \begin{table}[t]
 \centering
-\caption{Planned datasets and their role. ``Initial'' denotes the minimum
-experiment required before scaling the study. Exact processed statistics and
-split sizes will be inserted from the released preprocessing pipeline.}
+\caption{Datasets and their role. ``Completed'' denotes the Stage-1
+community-localization evaluation reported in this paper; the remaining rows
+describe the planned full-method evaluation.}
 \label{tab:datasets}
 \small
 \begin{tabular}{llll}
 \toprule
 Task & Dataset & Source/type & Role \\
 \midrule
-Graph & BA-2Motifs & synthetic & Initial motif-grounded test \\
-Graph & MUTAG & molecular & Initial real-world test \\
+Graph & BA-2Motifs & synthetic & Completed Stage-1 test \\
+Graph & Mutagenicity & molecular & Completed Stage-1 test \\
+Graph & MUTAG & molecular & Planned real-world test \\
 Graph & Benzene & molecular & Real-world extension \\
-Graph & Mutagenicity & molecular & Scale extension \\
 \midrule
 Node & Tree-Cycles & synthetic & Simple motif test \\
 Node & Tree-Grid & synthetic & Complex motif test \\
@@ -255,12 +308,12 @@ Node & Cora/Citeseer & citation & Optional real-world extension \\
 \paragraph{Graph classification.}
 BA-2Motifs is the primary diagnostic dataset because its class-dependent
 motifs permit qualitative checks of whether highly ranked communities overlap
-predictive structure. MUTAG provides a small real molecular benchmark and
-enables early comparison with prior graph explainers. Benzene and
-Mutagenicity are reserved for the expanded evaluation after the method and
-preprocessing have been fixed. Synthetic ground truth is used only for
-diagnostic localization metrics; counterfactual quality is always evaluated
-against the frozen predictor rather than assumed causal ground truth.
+predictive structure. Mutagenicity tests whether the same localization signal
+transfers to real molecular graphs without synthetic motif ground truth.
+MUTAG and Benzene remain planned extensions for comparison with full
+counterfactual explainers. Synthetic ground truth is used only for diagnostic
+localization metrics; counterfactual quality is always evaluated against the
+frozen predictor rather than assumed causal ground truth.
 
 \paragraph{Node classification.}
 Tree-Cycles, Tree-Grid, BA-Shapes, and BA-Community follow the family of
@@ -288,14 +341,34 @@ mechanism and will be identified as such rather than silently pooled.
 \subsection{Stage-1 Community-Localization Pilot}
 The first-stage pilot isolates the premise on which the subsequent
 coarse-to-fine search depends: whether an inexpensive community-level
-intervention localizes edges to which the frozen predictor is sensitive. We
-use the PyTorch Geometric version of BA-2Motifs, containing 1,000 graphs, 10
-node features, and two balanced classes. A stratified 80/10/10 split is fixed
-with predictor seed 0. The frozen predictor is a three-layer GCN with 20 hidden
+intervention localizes edges to which the frozen predictor is sensitive.
+Table~\ref{tab:stage1-data} reports the exact processed datasets and frozen
+predictors. The PyTorch Geometric version of BA-2Motifs contains 1,000 graphs,
+10 node features, and two balanced classes. Its three-layer GCN uses 20 hidden
 units per layer, raw adjacency aggregation (no normalization or added
-self-loops), and concatenated global max and sum readouts. It reaches 1.00
-validation accuracy and 0.98 test accuracy; consequently, 98 correctly
-classified test graphs (49 from each class) are eligible for explanation.
+self-loops), and concatenated global max and sum readouts. Mutagenicity
+contains 4,337 molecular graphs with 14-dimensional categorical node features
+and class counts 2,401/1,936. Its predictor is a three-layer GIN with 64 hidden
+units, batch normalization, sum pooling, and dropout 0.5. Each dataset uses a
+stratified 80/10/10 split and predictor seed 0. The frozen predictors reach
+0.980 and 0.796 test accuracy, leaving 98 and 347 correctly classified test
+graphs eligible for the pilot.
+
+\begin{table}[t]
+\centering
+\caption{Processed Stage-1 datasets and frozen predictors. Eligible graphs are
+correctly classified test instances.}
+\label{tab:stage1-data}
+\small
+\begin{tabular}{lrrrrr}
+\toprule
+Dataset & Graphs & Features & Val. acc. & Test acc. & Eligible \\
+\midrule
+BA-2Motifs & 1,000 & 10 & 1.000 & 0.980 & 98 \\
+Mutagenicity & 4,337 & 14 & 0.822 & 0.796 & 347 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 For every eligible graph, Louvain communities are ranked by the intervention
 score with $\alpha=0.5$. We compare the top-ranked community with the largest
@@ -313,8 +386,10 @@ against which community scores can be assessed. We report community
 intervention margin drop, prediction-flip rate under the whole-community
 intervention, coverage of the global Top-5 sensitive edges, and Spearman rank
 correlation between community scores and aggregated edge sensitivity. Paired
-differences over the same 98 graphs are accompanied by percentile bootstrap
-95\% confidence intervals with 5,000 resamples.
+differences over the same eligible graphs within each dataset are accompanied
+by percentile bootstrap 95\% confidence intervals with 5,000 resamples.
+Results are not pooled across datasets because their predictor margin scales
+differ.
 
 \subsection{Evaluation Protocol}
 The primary metrics are validity (flip rate), number of edits, normalized edit
@@ -333,121 +408,155 @@ controls, CF-GNNExplainer as an optimization-based baseline
 task and edit settings permit a fair comparison
 \cite{bajaj2021rcexplainer,ma2022clear,huang2023d4explainer}.
 All methods use the same trained predictor, test instances, permitted edit
-operations, and maximum budget. Results are aggregated over multiple predictor
-seeds and reported with uncertainty; instance-level comparisons use paired
-bootstrap confidence intervals.
+operations, and maximum budget. In Stage 1, three pilot seeds vary Louvain
+tie-breaking and the random control while holding predictor seed 0 fixed;
+instance-level comparisons use paired bootstrap confidence intervals. The
+complete-method evaluation will additionally aggregate over independently
+trained predictor seeds.
 
 \section{Results}
 \label{sec:results}
 
-\subsection{Stage-1 Community Localization on BA-2Motifs}
+\subsection{Stage-1 Community Localization}
 The graph partitions are non-degenerate and stable across the three pilot
-seeds. The mean number of communities ranges from 4.92 to 4.97, mean
-modularity from 0.6062 to 0.6067, and the mean cross-community edge ratio from
-0.1523 to 0.1543. No eligible graph is assigned to a single community. Thus,
-the pilot meaningfully tests a community prior rather than a trivial
-single-block partition.
+seeds. On BA-2Motifs, the mean number of communities ranges from 4.92 to 4.97,
+mean modularity from 0.6062 to 0.6067, and the mean cross-community edge ratio
+from 0.1523 to 0.1543. The corresponding Mutagenicity ranges are 5.80--5.81,
+0.5788--0.5793, and 0.2049--0.2059. No eligible graph in either dataset is
+assigned to a single community. Thus, the pilot meaningfully tests a
+community prior rather than a trivial single-block partition.
 
-Table~\ref{tab:pilot-summary} summarizes the localization outcomes. The
-intervention chosen by the proposed score produces a mean margin drop of
-approximately 4.89, compared with 1.18 for the largest community and 1.29 for
-the random control. It also contains at least one of the five globally most
-sensitive edges in 78.6--81.6\% of graphs. This is consistently higher than
-both largest-community selection (63.3--65.3\%) and random selection
-(52.1--53.2\%). The mean Spearman correlation between community score and
-edge-level sensitivity is positive in every run (0.447--0.467), providing
-additional evidence that the score is informative as a coarse ranking signal.
+Table~\ref{tab:pilot-summary} summarizes the localization outcomes. On both
+datasets, the intervention chosen by the proposed score produces a larger
+margin drop and covers globally Top-5 sensitive edges more often than either
+control. The mean community-score/edge-sensitivity Spearman correlation is
+positive in every run: 0.447--0.467 on BA-2Motifs and 0.498--0.507 on
+Mutagenicity. Together with Top-5 coverage of 0.803 and 0.863, respectively,
+this supports the two empirical implications of
+Proposition~\ref{prop:localization}: community scores provide useful
+coarse-grained localization of fine-grained sensitivity.
 
 \begin{table}[t]
 \centering
-\caption{Stage-1 results on the 98 correctly classified BA-2Motifs test
-graphs. Entries are means over pilot seeds 0, 1, and 2; the same predictor and
-test split are reused in all runs.}
+\caption{Stage-1 results. Entries are means over pilot seeds 0, 1, and 2; the
+same predictor and test split are reused within each dataset. Margin drops are
+not compared across datasets because their logit scales differ.}
 \label{tab:pilot-summary}
 \small
-\begin{tabular}{lrrr}
+\begin{tabular}{llrrr}
 \toprule
-Metric & Top-ranked & Largest & Random \\
+Dataset & Metric & Top-ranked & Largest & Random \\
 \midrule
-Margin drop & 4.885 & 1.184 & 1.290 \\
-Whole-community flip rate & 0.500 & 0.480 & 0.350 \\
-Global Top-5 edge coverage & 0.803 & 0.639 & 0.527 \\
+\multirow{3}{*}{BA-2Motifs}
+ & Margin drop & 4.885 & 1.184 & 1.290 \\
+ & Whole-community flip rate & 0.500 & 0.480 & 0.350 \\
+ & Global Top-5 edge coverage & 0.803 & 0.639 & 0.527 \\
+\addlinespace
+\multirow{3}{*}{Mutagenicity}
+ & Margin drop & 1.911 & 0.956 & 0.721 \\
+ & Whole-community flip rate & 0.359 & 0.162 & 0.112 \\
+ & Global Top-5 edge coverage & 0.863 & 0.748 & 0.582 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 The paired analysis in Table~\ref{tab:pilot-bootstrap} confirms that the
-margin-drop and Top-5-coverage advantages do not arise from comparing
-different graph sets. All corresponding 95\% confidence intervals exclude
-zero for every pilot seed. The top-ranked intervention also improves flip rate
-over the random control by 0.140--0.156, with intervals excluding zero. In
-contrast, its flip-rate advantage over the largest-community control is only
-0.020 and its interval includes zero. We therefore do not claim that the
-ranking improves whole-community flip probability over simply choosing the
-largest community. Margin reduction and sensitive-edge coverage, rather than
-whole-community deletion itself, provide the primary evidence for the
-localization hypothesis.
+advantages do not arise from comparing different graph sets. On BA-2Motifs,
+the margin-drop and Top-5-coverage intervals exclude zero for every pilot seed,
+as does the flip-rate comparison with random selection. Its flip-rate
+advantage over the largest community remains only 0.020, with an interval
+including zero. On Mutagenicity, all six paired effects are positive and every
+per-seed 95\% interval excludes zero. In particular, top-ranked selection
+improves margin drop by 0.917--0.976 and Top-5 coverage by 0.098--0.133 over
+the largest-community control. The real-data replication therefore rules out
+the simple explanation that the method merely selects large communities.
 
 \begin{table}[t]
 \centering
-\caption{Paired effects of top-ranked community selection. Values are mean
-differences with 95\% percentile bootstrap confidence intervals over the same
-98 graphs.}
+\caption{Paired effects of top-ranked community selection. The mean is the
+range across pilot seeds; the CI envelope is the smallest interval containing
+the three per-seed 95\% percentile bootstrap intervals.}
 \label{tab:pilot-bootstrap}
 \small
 \begin{tabular}{llrr}
 \toprule
-Effect & Seed & Mean & 95\% CI \\
+Dataset & Effect & Mean range & 95\% CI envelope \\
 \midrule
-\multirow{3}{*}{Margin drop vs. largest}
- & 0 & 3.642 & [2.959, 4.317] \\
- & 1 & 3.609 & [2.918, 4.274] \\
- & 2 & 3.851 & [3.158, 4.520] \\
+\multirow{4}{*}{BA-2Motifs}
+ & Margin vs. largest & 3.609--3.851 & [2.918, 4.520] \\
+ & Margin vs. random & 3.550--3.641 & [3.208, 3.975] \\
+ & Top-5 vs. largest & 0.153--0.184 & [0.020, 0.316] \\
+ & Top-5 vs. random & 0.264--0.290 & [0.173, 0.377] \\
 \addlinespace
-\multirow{3}{*}{Margin drop vs. random}
- & 0 & 3.594 & [3.271, 3.941] \\
- & 1 & 3.550 & [3.208, 3.907] \\
- & 2 & 3.641 & [3.322, 3.975] \\
-\addlinespace
-\multirow{3}{*}{Top-5 coverage vs. largest}
- & 0 & 0.184 & [0.051, 0.316] \\
- & 1 & 0.153 & [0.020, 0.286] \\
- & 2 & 0.153 & [0.020, 0.296] \\
-\addlinespace
-\multirow{3}{*}{Top-5 coverage vs. random}
- & 0 & 0.290 & [0.202, 0.377] \\
- & 1 & 0.274 & [0.184, 0.360] \\
- & 2 & 0.264 & [0.173, 0.352] \\
+\multirow{6}{*}{Mutagenicity}
+ & Margin vs. largest & 0.917--0.976 & [0.793, 1.111] \\
+ & Margin vs. random & 1.172--1.203 & [1.083, 1.297] \\
+ & Flip vs. largest & 0.190--0.207 & [0.150, 0.251] \\
+ & Flip vs. random & 0.242--0.257 & [0.207, 0.293] \\
+ & Top-5 vs. largest & 0.098--0.133 & [0.046, 0.184] \\
+ & Top-5 vs. random & 0.263--0.290 & [0.223, 0.327] \\
 \bottomrule
 \end{tabular}
 \end{table}
 
+\subsection{Discussion}
+The theoretical and empirical results answer complementary questions.
+Proposition~\ref{prop:localization} establishes a conditional guarantee: when
+joint deletion effects are sufficiently close to the sum of their individual
+effects, a high community score certifies a lower bound on the sensitivity of
+at least one contained edge. It explains why community intervention can serve
+as a coarse explanatory lens, but does not guarantee a positive rank
+correlation for every nonlinear GNN. The experiments evaluate whether this
+conditional mechanism remains informative when its interaction residuals are
+unknown. Positive Spearman correlations on both a controlled synthetic
+dataset and real molecular graphs, together with consistently improved Top-5
+coverage, provide convergent evidence that it does.
+
+The largest-community control is important for interpreting this evidence.
+Because $D_C$ can grow with the number of intervened edges, an unnormalized
+method could appear effective merely by selecting a large region. The
+$|A(C)|^{0.5}$ normalization instead selects communities whose margin effect
+is large relative to intervention size. Its advantage over the largest
+community in margin reduction and sensitive-edge coverage on both datasets,
+and additionally in whole-community flip rate on Mutagenicity, shows that the
+signal is not reducible to community size. Stability across three Louvain and
+random-control seeds further suggests that the result is not driven by one
+partition tie-break. These findings justify using the ranking to prioritize a
+fine edge search; they do not yet establish that this search is faster or
+returns smaller counterfactuals.
+
 \paragraph{Scope and limitations.}
 This pilot supports only the first research question: community intervention
-can localize prediction-sensitive regions on BA-2Motifs. It does not yet show
-that \method produces valid, sparse, or structurally preserving
-counterfactual explanations. Removing all edges associated with a community
-is a diagnostic perturbation rather than the returned explanation, and the
-single-edge scan is an exhaustive evaluation oracle rather than an efficient
-search. Moreover, the evidence currently covers one synthetic dataset and one
-trained predictor. The three pilot seeds assess community-detection and random
-control stability, not predictor-seed robustness. Evaluation of the adaptive
-fine search, multiple trained predictors, additional datasets, full
-counterfactual baselines, and the proposed validity, minimality, efficiency,
-and structural-preservation metrics is left to the next experimental stage.
+can localize prediction-sensitive regions on one synthetic and one real-world
+graph-classification dataset. It does not yet show that \method produces
+valid, sparse, or structurally preserving counterfactual explanations.
+Removing all edges associated with a community is a diagnostic perturbation
+rather than the returned explanation, and the single-edge scan is an
+exhaustive evaluation oracle rather than an efficient search. Each dataset
+currently uses one trained predictor. The three pilot seeds assess
+community-detection and random-control stability, not predictor-seed
+robustness. Moreover, Proposition~\ref{prop:localization} depends on a bounded
+interaction residual and does not claim universal positive correlation.
+Evaluation of the adaptive fine search, multiple trained predictors,
+additional datasets, full counterfactual baselines, and the proposed validity,
+minimality, efficiency, and structural-preservation metrics is left to the
+next experimental stage.
 
 \section{Conclusion}
 \label{sec:conclusion}
 We presented \method, a community-guided coarse-to-fine framework for
-counterfactual GNN explanations, and evaluated its community-localization
-premise in a controlled first-stage pilot. On BA-2Motifs, intervention-ranked
-communities consistently yielded larger margin reductions and higher coverage
-of globally sensitive edges than random and largest-community controls. This
-supports using community interventions to order a subsequent edge-level
-search, but it is not evidence that the complete method already returns
-minimal counterfactuals. The next stage must evaluate the adaptive search
-itself across predictor seeds, datasets, and counterfactual baselines before
-claims about validity, efficiency, or structural preservation can be made.
+counterfactual GNN explanations, established a conditional coarse-localization
+guarantee, and evaluated its practical premise in a controlled first-stage
+pilot. On BA-2Motifs and Mutagenicity, intervention-ranked communities
+consistently yielded larger margin reductions and higher coverage of globally
+sensitive edges than random and largest-community controls. Positive
+community/edge sensitivity correlations on both datasets further support the
+community score as a coarse explanatory signal. This justifies using
+community interventions to order a subsequent edge-level search, but it is not
+evidence that the complete method already returns minimal counterfactuals. The
+next stage must evaluate the adaptive search itself across predictor seeds,
+datasets, and counterfactual baselines before claims about validity,
+efficiency, or structural preservation can be made.
 
 \bibliographystyle{splncs04}
 \bibliography{references}

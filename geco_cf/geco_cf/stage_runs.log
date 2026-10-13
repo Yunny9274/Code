@@ -1,0 +1,261 @@
+
+########## Stage 1 pilot seed0 ##########
+{
+  "config": {
+    "alpha": 0.5,
+    "community_method": "louvain",
+    "random_repeats": 30,
+    "score_individual_edges": true,
+    "top_k_edges": 5,
+    "correct_only": true,
+    "min_original_margin": 0.0,
+    "seed": 0
+  },
+  "num_graphs": 98,
+  "mean_num_communities": 4.918367346938775,
+  "single_community_rate": 0.0,
+  "mean_modularity": 0.606212329428813,
+  "mean_cross_edge_ratio": 0.15232339089481944,
+  "top_mean_margin_drop": 5.142688274383545,
+  "largest_mean_margin_drop": 1.2419253788432296,
+  "random_mean_margin_drop": 1.3472109824571075,
+  "top_flip_rate": 0.5,
+  "largest_flip_rate": 0.47959183673469385,
+  "random_flip_rate": 0.3503401360544217,
+  "top_global_best_edge_hit_rate": 0.5918367346938775,
+  "top_top_k_edge_hit_rate": 0.8367346938775511,
+  "largest_top_k_edge_hit_rate": 0.5918367346938775,
+  "random_top_k_edge_hit_rate": 0.507482993197279,
+  "mean_community_edge_spearman": 0.4520253547113008,
+  "num_graphs_with_defined_spearman": 98,
+  "total_forward_calls": 3075,
+  "mean_runtime_seconds": 0.06595324898110133
+}
+
+exit=0  elapsed=23.2s
+
+########## Stage 1 pilot seed1 ##########
+{
+  "config": {
+    "alpha": 0.5,
+    "community_method": "louvain",
+    "random_repeats": 30,
+    "score_individual_edges": true,
+    "top_k_edges": 5,
+    "correct_only": true,
+    "min_original_margin": 0.0,
+    "seed": 1
+  },
+  "num_graphs": 98,
+  "mean_num_communities": 4.928571428571429,
+  "single_community_rate": 0.0,
+  "mean_modularity": 0.6065195990822364,
+  "mean_cross_edge_ratio": 0.15277864992150705,
+  "top_mean_margin_drop": 5.16424882655241,
+  "largest_mean_margin_drop": 1.290175210456459,
+  "random_mean_margin_drop": 1.4041230008006094,
+  "top_flip_rate": 0.5,
+  "largest_flip_rate": 0.47959183673469385,
+  "random_flip_rate": 0.363265306122449,
+  "top_global_best_edge_hit_rate": 0.5714285714285714,
+  "top_top_k_edge_hit_rate": 0.8163265306122449,
+  "largest_top_k_edge_hit_rate": 0.6122448979591837,
+  "random_top_k_edge_hit_rate": 0.5163265306122449,
+  "mean_community_edge_spearman": 0.45473174478740314,
+  "num_graphs_with_defined_spearman": 98,
+  "total_forward_calls": 3076,
+  "mean_runtime_seconds": 0.05687736020285674
+}
+
+exit=0  elapsed=19.4s
+
+########## Stage 1 pilot seed2 ##########
+{
+  "config": {
+    "alpha": 0.5,
+    "community_method": "louvain",
+    "random_repeats": 30,
+    "score_individual_edges": true,
+    "top_k_edges": 5,
+    "correct_only": true,
+    "min_original_margin": 0.0,
+    "seed": 2
+  },
+  "num_graphs": 98,
+  "mean_num_communities": 4.969387755102041,
+  "single_community_rate": 0.0,
+  "mean_modularity": 0.6066785533148171,
+  "mean_cross_edge_ratio": 0.15434850863422292,
+  "top_mean_margin_drop": 5.174461224857642,
+  "largest_mean_margin_drop": 1.064261795914903,
+  "random_mean_margin_drop": 1.341756347085343,
+  "top_flip_rate": 0.5,
+  "largest_flip_rate": 0.47959183673469385,
+  "random_flip_rate": 0.34931972789115645,
+  "top_global_best_edge_hit_rate": 0.5612244897959183,
+  "top_top_k_edge_hit_rate": 0.8061224489795918,
+  "largest_top_k_edge_hit_rate": 0.5816326530612245,
+  "random_top_k_edge_hit_rate": 0.5071428571428571,
+  "mean_community_edge_spearman": 0.4395167503958564,
+  "num_graphs_with_defined_spearman": 98,
+  "total_forward_calls": 3080,
+  "mean_runtime_seconds": 0.23057258163569305
+}
+
+exit=0  elapsed=59.3s
+
+########## Stage 2 global greedy (val) ##########
+{
+  "config": {
+    "method": "global_greedy",
+    "max_edits": 5,
+    "reverse_prune": true,
+    "correct_only": true,
+    "min_original_margin": 0.0,
+    "seed": 0,
+    "community_method": "louvain",
+    "alpha": 0.5,
+    "bridge_policy": "none"
+  },
+  "num_graphs": 100,
+  "label_counts": {
+    "0": 50,
+    "1": 50
+  },
+  "by_label": {
+    "0": {
+      "num_graphs": 50,
+      "num_successes": 0,
+      "validity": 0.0,
+      "mean_edit_count_success": null,
+      "mean_forward_calls": 115.9
+    },
+    "1": {
+      "num_graphs": 50,
+      "num_successes": 50,
+      "validity": 1.0,
+      "mean_edit_count_success": 1.0,
+      "mean_forward_calls": 28.0
+    }
+  },
+  "num_successes": 50,
+  "validity": 0.5,
+  "mean_edit_count_success": 1.0,
+  "mean_normalized_edit_distance_success": 0.038461538461538464,
+  "mean_forward_calls": 71.95,
+  "total_forward_calls": 7195,
+  "mean_candidate_evaluations": 70.45,
+  "mean_community_scoring_calls": 0.0,
+  "mean_runtime_seconds": 0.18762445699656383,
+  "mean_component_increase_success": 0.26,
+  "mean_largest_component_ratio_change_success": -0.05199999999999999,
+  "boundary_edit_rate_success": null,
+  "mean_communities_touched_success": null,
+  "bridge_edit_rate_success": null
+}
+
+exit=0  elapsed=48.7s
+
+########## Stage 2 GECo-CF (val) ##########
+{
+  "config": {
+    "method": "geco_cf",
+    "max_edits": 5,
+    "reverse_prune": true,
+    "correct_only": true,
+    "min_original_margin": 0.0,
+    "seed": 0,
+    "community_method": "louvain",
+    "alpha": 0.5,
+    "bridge_policy": "none"
+  },
+  "num_graphs": 100,
+  "label_counts": {
+    "0": 50,
+    "1": 50
+  },
+  "by_label": {
+    "0": {
+      "num_graphs": 50,
+      "num_successes": 0,
+      "validity": 0.0,
+      "mean_edit_count_success": null,
+      "mean_forward_calls": 117.4
+    },
+    "1": {
+      "num_graphs": 50,
+      "num_successes": 50,
+      "validity": 1.0,
+      "mean_edit_count_success": 1.0,
+      "mean_forward_calls": 8.7
+    }
+  },
+  "num_successes": 50,
+  "validity": 0.5,
+  "mean_edit_count_success": 1.0,
+  "mean_normalized_edit_distance_success": 0.038461538461538464,
+  "mean_forward_calls": 63.05,
+  "total_forward_calls": 6305,
+  "mean_candidate_evaluations": 56.69,
+  "mean_community_scoring_calls": 4.86,
+  "mean_runtime_seconds": 0.11219223500345833,
+  "mean_component_increase_success": 1.0,
+  "mean_largest_component_ratio_change_success": -0.20319999999999996,
+  "boundary_edit_rate_success": 1.0,
+  "mean_communities_touched_success": 2.0,
+  "bridge_edit_rate_success": 1.0
+}
+
+exit=0  elapsed=28.7s
+
+########## Stage 2 step5 bridge-aware (val) ##########
+{
+  "config": {
+    "method": "geco_cf",
+    "max_edits": 5,
+    "reverse_prune": true,
+    "correct_only": true,
+    "min_original_margin": 0.0,
+    "seed": 0,
+    "community_method": "louvain",
+    "alpha": 0.5,
+    "bridge_policy": "prefer_non_bridge"
+  },
+  "num_graphs": 100,
+  "label_counts": {
+    "0": 50,
+    "1": 50
+  },
+  "by_label": {
+    "0": {
+      "num_graphs": 50,
+      "num_successes": 0,
+      "validity": 0.0,
+      "mean_edit_count_success": null,
+      "mean_forward_calls": 120.76
+    },
+    "1": {
+      "num_graphs": 50,
+      "num_successes": 50,
+      "validity": 1.0,
+      "mean_edit_count_success": 1.0,
+      "mean_forward_calls": 16.1
+    }
+  },
+  "num_successes": 50,
+  "validity": 0.5,
+  "mean_edit_count_success": 1.0,
+  "mean_normalized_edit_distance_success": 0.038461538461538464,
+  "mean_forward_calls": 68.43,
+  "total_forward_calls": 6843,
+  "mean_candidate_evaluations": 62.07,
+  "mean_community_scoring_calls": 4.86,
+  "mean_runtime_seconds": 0.1029304909973871,
+  "mean_component_increase_success": 0.0,
+  "mean_largest_component_ratio_change_success": 0.0,
+  "boundary_edit_rate_success": 0.0,
+  "mean_communities_touched_success": 1.0,
+  "bridge_edit_rate_success": 0.0
+}
+
+exit=0  elapsed=23.5s
